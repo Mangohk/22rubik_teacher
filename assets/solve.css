@@ -102,6 +102,26 @@ a {
   transition: width 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.mast-end {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+  min-width: 3.25rem;
+}
+
+.app-version {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
 .step-count {
   margin: 0;
   font-family: var(--font-display);
