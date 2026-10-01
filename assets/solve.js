@@ -1,6 +1,6 @@
 (() => {
   /** Increment by 1 on every shipped update (shown on step 1, top-right). */
-  const APP_VERSION = 1;
+  const APP_VERSION = 2;
 
   const COLORS = {
     U: "c-white",
@@ -172,21 +172,22 @@
     return rotateFaceCW(face, times);
   }
 
-  // WCA CW = looking at the named face from outside. Side cycles derived from
-  // rigid corner turns + faceletColor index mapping (one geometric truth).
+  // Facelet movers matched to CSS layer end poses (translate3d x,-y,z).
+  // U family: keep turnDegrees; invert facelets so U' snap matches the
+  // rotateY(+90) end pose (was snapping to U).
 
   function moveU(times = 1) {
-    faces.U = rotateFaceCCW(faces.U, times);
+    faces.U = rotateFaceCW(faces.U, times);
     for (let n = 0; n < times; n += 1) {
       const tmp = [faces.F[0], faces.F[1]];
-      faces.F[0] = faces.L[0];
-      faces.F[1] = faces.L[1];
-      faces.L[0] = faces.B[0];
-      faces.L[1] = faces.B[1];
-      faces.B[0] = faces.R[0];
-      faces.B[1] = faces.R[1];
-      faces.R[0] = tmp[0];
-      faces.R[1] = tmp[1];
+      faces.F[0] = faces.R[0];
+      faces.F[1] = faces.R[1];
+      faces.R[0] = faces.B[0];
+      faces.R[1] = faces.B[1];
+      faces.B[0] = faces.L[0];
+      faces.B[1] = faces.L[1];
+      faces.L[0] = tmp[0];
+      faces.L[1] = tmp[1];
     }
   }
 
