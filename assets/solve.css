@@ -349,6 +349,7 @@ h1 {
   width: 84px;
   height: 84px;
   transform-style: preserve-3d;
+  transform-origin: 50% 50%;
   will-change: transform;
 }
 
