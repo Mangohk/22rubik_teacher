@@ -349,8 +349,12 @@ h1 {
   width: 84px;
   height: 84px;
   transform-style: preserve-3d;
-  transform-origin: 50% 50%;
+  transform-origin: 50% 50% 0;
   will-change: transform;
+}
+
+.cubie.is-turning {
+  z-index: 2;
 }
 
 .sticker {

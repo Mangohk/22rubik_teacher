@@ -11,8 +11,8 @@
   const FACE_ORDER = ["U", "R", "F", "D", "L", "B"];
   const CUBIE = 84;
   const HALF = CUBIE / 2;
-  const TURN_MS = 340;
-  const TURN_MS_180 = 460;
+  const TURN_MS = 420;
+  const TURN_MS_180 = 560;
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /** @type {Record<string, string[]>} */
@@ -369,6 +369,12 @@
     });
   }
 
+  function nextFrame() {
+    return new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    });
+  }
+
   async function animateToken(token) {
     const { face, quarterTurns } = parseToken(token);
 
@@ -387,23 +393,26 @@
 
     cubieNodes.forEach((node, i) => {
       const c = CUBIES[i];
+      node.classList.remove("is-turning");
       node.style.transition = "none";
       node.style.transform = cubieTranslate(c.x, c.y, c.z);
       if (pred(c)) moversIdx.push(i);
     });
-    void els.cube.offsetWidth;
+    await nextFrame();
 
     els.cubeOrbit.classList.add("turning");
     moversIdx.forEach((i) => {
       const c = CUBIES[i];
       const node = cubieNodes[i];
+      node.classList.add("is-turning");
       node.style.transition = `transform ${ms}ms cubic-bezier(0.22, 0.61, 0.36, 1)`;
       node.style.transform = `${axisRotate(face, deg)} ${cubieTranslate(c.x, c.y, c.z)}`;
     });
 
-    await wait(ms + 20);
+    await wait(ms + 30);
     applyMove(token);
     els.cubeOrbit.classList.remove("turning");
+    cubieNodes.forEach((node) => node.classList.remove("is-turning"));
     resetCubieTransforms();
     renderCube();
   }
