@@ -9,12 +9,28 @@
   };
 
   const FACE_ORDER = ["U", "R", "F", "D", "L", "B"];
+  const CUBIE = 84;
+  const HALF = CUBIE / 2;
+  const TURN_MS = 340;
+  const TURN_MS_180 = 460;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /** @type {Record<string, string[]>} */
   let faces;
 
   const ALG1 = ["F", "R'", "F", "L2", "F'", "R", "F", "L2", "F2"];
   const ALG2 = ["R'", "U'", "R", "U'", "R'", "U2", "R"];
+
+  const CUBIES = [
+    { x: -1, y: 1, z: -1 },
+    { x: 1, y: 1, z: -1 },
+    { x: -1, y: 1, z: 1 },
+    { x: 1, y: 1, z: 1 },
+    { x: -1, y: -1, z: -1 },
+    { x: 1, y: -1, z: -1 },
+    { x: -1, y: -1, z: 1 },
+    { x: 1, y: -1, z: 1 },
+  ];
 
   const steps = [
     {
@@ -91,9 +107,12 @@
 
   let stepIndex = 0;
   let caseId = "1";
-  let playTimer = null;
+  let playing = false;
+  let animating = false;
   let playCursor = -1;
   let activeAlg = [];
+  /** @type {HTMLElement[]} */
+  let cubieNodes = [];
 
   const els = {
     railFill: document.getElementById("rail-fill"),
@@ -231,13 +250,18 @@
 
   const movers = { U: moveU, D: moveD, F: moveF, B: moveB, L: moveL, R: moveR };
 
-  function applyMove(token) {
+  function parseToken(token) {
     const face = token[0];
     const suffix = token.slice(1);
-    let times = 1;
-    if (suffix === "2") times = 2;
-    if (suffix === "'") times = 3;
-    movers[face](times);
+    let quarterTurns = 1;
+    if (suffix === "2") quarterTurns = 2;
+    if (suffix === "'") quarterTurns = 3;
+    return { face, quarterTurns, suffix };
+  }
+
+  function applyMove(token) {
+    const { face, quarterTurns } = parseToken(token);
+    movers[face](quarterTurns);
   }
 
   function flipWhiteDown() {
@@ -251,20 +275,142 @@
     faces.R = rotateFace(left, 2);
   }
 
-  function renderCube() {
+  function faceletColor(face, x, y, z) {
+    if (face === "U" && y === 1) {
+      return faces.U[(z === 1 ? 2 : 0) + (x === 1 ? 1 : 0)];
+    }
+    if (face === "D" && y === -1) {
+      return faces.D[(z === -1 ? 2 : 0) + (x === 1 ? 1 : 0)];
+    }
+    if (face === "F" && z === 1) {
+      return faces.F[(y === -1 ? 2 : 0) + (x === 1 ? 1 : 0)];
+    }
+    if (face === "B" && z === -1) {
+      return faces.B[(y === -1 ? 2 : 0) + (x === -1 ? 1 : 0)];
+    }
+    if (face === "L" && x === -1) {
+      return faces.L[(y === -1 ? 2 : 0) + (z === 1 ? 1 : 0)];
+    }
+    if (face === "R" && x === 1) {
+      return faces.R[(y === -1 ? 2 : 0) + (z === -1 ? 1 : 0)];
+    }
+    return null;
+  }
+
+  function cubieTranslate(x, y, z) {
+    return `translate3d(${x * HALF}px, ${-y * HALF}px, ${z * HALF}px)`;
+  }
+
+  function paintCubie(node, x, y, z) {
     FACE_ORDER.forEach((face) => {
-      const nodes = els.cube.querySelectorAll(`[data-face="${face}"] .sticker`);
-      faces[face].forEach((colorKey, i) => {
-        nodes[i].className = `sticker ${COLORS[colorKey]}`;
-      });
+      const sticker = node.querySelector(`[data-face="${face}"]`);
+      if (!sticker) return;
+      const color = faceletColor(face, x, y, z);
+      if (!color) {
+        sticker.hidden = true;
+        return;
+      }
+      sticker.hidden = false;
+      sticker.className = `sticker face-${face.toLowerCase()} ${COLORS[color]}`;
     });
   }
 
-  function stopPlay() {
-    if (playTimer) {
-      clearInterval(playTimer);
-      playTimer = null;
+  function resetCubieTransforms() {
+    cubieNodes.forEach((node, i) => {
+      const { x, y, z } = CUBIES[i];
+      node.style.transition = "none";
+      node.style.transform = cubieTranslate(x, y, z);
+    });
+    void els.cube.offsetWidth;
+  }
+
+  function renderCube() {
+    cubieNodes.forEach((node, i) => {
+      const { x, y, z } = CUBIES[i];
+      paintCubie(node, x, y, z);
+      node.style.transform = cubieTranslate(x, y, z);
+    });
+  }
+
+  function layerPredicate(face) {
+    if (face === "R") return (c) => c.x === 1;
+    if (face === "L") return (c) => c.x === -1;
+    if (face === "U") return (c) => c.y === 1;
+    if (face === "D") return (c) => c.y === -1;
+    if (face === "F") return (c) => c.z === 1;
+    if (face === "B") return (c) => c.z === -1;
+    return () => false;
+  }
+
+  /** Visual degrees for one token; primes use a short opposite 90°. */
+  function turnDegrees(face, quarterTurns) {
+    const cw = {
+      U: -90,
+      D: 90,
+      R: -90,
+      L: 90,
+      F: -90,
+      B: 90,
+    }[face];
+    if (quarterTurns === 2) return cw * 2;
+    if (quarterTurns === 3) return -cw;
+    return cw;
+  }
+
+  function axisRotate(face, deg) {
+    if (face === "U" || face === "D") return `rotateY(${deg}deg)`;
+    if (face === "R" || face === "L") return `rotateX(${deg}deg)`;
+    return `rotateZ(${deg}deg)`;
+  }
+
+  function wait(ms) {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
+  }
+
+  async function animateToken(token) {
+    const { face, quarterTurns } = parseToken(token);
+
+    if (reducedMotion) {
+      applyMove(token);
+      renderCube();
+      return;
     }
+
+    // Paint pre-move state, then spin the layer, then commit facelets.
+    renderCube();
+    const deg = turnDegrees(face, quarterTurns);
+    const ms = quarterTurns === 2 ? TURN_MS_180 : TURN_MS;
+    const pred = layerPredicate(face);
+    const moversIdx = [];
+
+    cubieNodes.forEach((node, i) => {
+      const c = CUBIES[i];
+      node.style.transition = "none";
+      node.style.transform = cubieTranslate(c.x, c.y, c.z);
+      if (pred(c)) moversIdx.push(i);
+    });
+    void els.cube.offsetWidth;
+
+    els.cubeOrbit.classList.add("turning");
+    moversIdx.forEach((i) => {
+      const c = CUBIES[i];
+      const node = cubieNodes[i];
+      node.style.transition = `transform ${ms}ms cubic-bezier(0.22, 0.61, 0.36, 1)`;
+      node.style.transform = `${axisRotate(face, deg)} ${cubieTranslate(c.x, c.y, c.z)}`;
+    });
+
+    await wait(ms + 20);
+    applyMove(token);
+    els.cubeOrbit.classList.remove("turning");
+    resetCubieTransforms();
+    renderCube();
+  }
+
+  function stopPlay() {
+    playing = false;
+    els.btnPlay.textContent = "播放";
   }
 
   function setPreset(name) {
@@ -297,6 +443,7 @@
       flipWhiteDown();
       moveU(1);
     }
+    resetCubieTransforms();
     renderCube();
   }
 
@@ -322,7 +469,6 @@
     const step = steps[stepIndex];
     stopPlay();
     playCursor = -1;
-    els.btnPlay.textContent = "播放";
 
     if (!step.showAlg) {
       els.algBlock.hidden = true;
@@ -385,36 +531,39 @@
     els.stepCount.textContent = `${stepIndex + 1} / ${steps.length}`;
   }
 
+  function setControlsBusy(busy) {
+    els.btnStep.disabled = busy || !activeAlg.length;
+    els.btnPlay.disabled = busy || !activeAlg.length;
+    els.btnReset.disabled = busy;
+    els.btnPrev.disabled = busy || stepIndex === 0;
+    els.btnNext.disabled = busy || stepIndex === steps.length - 1;
+  }
+
   function renderStep() {
     const step = steps[stepIndex];
     els.stepTitle.textContent = step.title;
     els.stepBody.innerHTML = step.body;
     els.hold.textContent = step.hold;
     els.cubeOrbit.dataset.hint = step.hint || "";
-    els.btnPrev.disabled = stepIndex === 0;
-    els.btnNext.disabled = stepIndex === steps.length - 1;
     els.btnNext.textContent =
       stepIndex === steps.length - 1 ? "完成" : "下一步";
     renderProgress();
     renderCases();
     setPreset(step.preset);
     loadAlgForStep();
+    setControlsBusy(false);
     animateStepPanel();
   }
 
   function goTo(index) {
+    if (animating) return;
+    stopPlay();
     stepIndex = Math.max(0, Math.min(steps.length - 1, index));
     renderStep();
   }
 
-  function pulseCube() {
-    els.cube.classList.remove("pulse");
-    void els.cube.offsetWidth;
-    els.cube.classList.add("pulse");
-  }
-
-  function stepOnce() {
-    if (!activeAlg.length) return;
+  async function stepOnce() {
+    if (animating || !activeAlg.length) return;
     if (playCursor >= activeAlg.length - 1) {
       playCursor = -1;
       setPreset(steps[stepIndex].preset);
@@ -425,17 +574,23 @@
       setPreset(steps[stepIndex].preset);
     }
     playCursor += 1;
-    applyMove(activeAlg[playCursor]);
-    renderCube();
     paintMoveHighlight();
-    pulseCube();
+    animating = true;
+    setControlsBusy(true);
+    els.btnPlay.disabled = false;
+    try {
+      await animateToken(activeAlg[playCursor]);
+    } finally {
+      animating = false;
+      if (!playing) setControlsBusy(false);
+    }
   }
 
-  function playAlg() {
-    if (!activeAlg.length) return;
-    if (playTimer) {
+  async function playAlg() {
+    if (!activeAlg.length || animating) return;
+    if (playing) {
       stopPlay();
-      els.btnPlay.textContent = "播放";
+      setControlsBusy(false);
       return;
     }
     if (playCursor >= activeAlg.length - 1 || playCursor === -1) {
@@ -443,51 +598,59 @@
       setPreset(steps[stepIndex].preset);
       paintMoveHighlight();
     }
+    playing = true;
     els.btnPlay.textContent = "暫停";
-    playTimer = setInterval(() => {
-      if (playCursor >= activeAlg.length - 1) {
-        stopPlay();
-        els.btnPlay.textContent = "播放";
-        return;
-      }
-      stepOnce();
-    }, 650);
+    setControlsBusy(true);
+    els.btnPlay.disabled = false;
+
+    while (playing && playCursor < activeAlg.length - 1) {
+      await stepOnce();
+      if (!playing) break;
+      await wait(90);
+    }
+    stopPlay();
+    setControlsBusy(false);
   }
 
   function buildCubeDom() {
     els.cube.innerHTML = "";
-    FACE_ORDER.forEach((face) => {
-      const faceEl = document.createElement("div");
-      faceEl.className = `face face-${face.toLowerCase()}`;
-      faceEl.dataset.face = face;
-      for (let i = 0; i < 4; i += 1) {
+    cubieNodes = CUBIES.map(({ x, y, z }, index) => {
+      const cubie = document.createElement("div");
+      cubie.className = "cubie";
+      cubie.dataset.index = String(index);
+      cubie.style.transform = cubieTranslate(x, y, z);
+      FACE_ORDER.forEach((face) => {
         const sticker = document.createElement("div");
-        sticker.className = "sticker";
-        faceEl.appendChild(sticker);
-      }
-      els.cube.appendChild(faceEl);
+        sticker.className = `sticker face-${face.toLowerCase()}`;
+        sticker.dataset.face = face;
+        cubie.appendChild(sticker);
+      });
+      els.cube.appendChild(cubie);
+      return cubie;
     });
   }
 
   els.btnPrev.addEventListener("click", () => goTo(stepIndex - 1));
   els.btnNext.addEventListener("click", () => goTo(stepIndex + 1));
-  els.btnPlay.addEventListener("click", playAlg);
+  els.btnPlay.addEventListener("click", () => {
+    playAlg();
+  });
   els.btnStep.addEventListener("click", () => {
     stopPlay();
-    els.btnPlay.textContent = "播放";
     stepOnce();
   });
   els.btnReset.addEventListener("click", () => {
+    if (animating) return;
     stopPlay();
-    els.btnPlay.textContent = "播放";
     playCursor = -1;
     setPreset(steps[stepIndex].preset);
     paintMoveHighlight();
+    setControlsBusy(false);
   });
 
   els.algLabel.addEventListener("click", () => {
     const step = steps[stepIndex];
-    if (step.showAlg !== "both") return;
+    if (step.showAlg !== "both" || animating) return;
     if (activeAlg[0] === "F") {
       activeAlg = [...ALG2];
       els.algLabel.textContent = "公式 2（點此切換公式 1）";
@@ -497,7 +660,6 @@
     }
     stopPlay();
     playCursor = -1;
-    els.btnPlay.textContent = "播放";
     renderMoves(activeAlg);
     paintMoveHighlight();
   });
