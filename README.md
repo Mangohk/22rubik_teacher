@@ -1,4 +1,5 @@
 # 22rubik_teacher
+<<<<<<< HEAD
 
 Page that teach you how to solve 2x2 Rubik.
 
@@ -18,3 +19,9 @@ Expected URL after Pages is enabled from `main` / root:
 https://mangohk.github.io/22rubik_teacher/
 
 Enable: **Settings → Pages → Deploy from a branch → `main` / `/ (root)`**.
+=======
+Page that teach you how to solve 2x2 Rubik
+
+# Page
+https://mangohk.github.io/22rubik_teacher/
+>>>>>>> origin/main
