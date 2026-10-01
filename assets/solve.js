@@ -374,18 +374,21 @@
 
   /**
    * CSS degrees for one WCA CW token.
-   * Model Y-up vs CSS Y-down: U/D use rotateY with opposite model sign.
-   * L/R/F/B share model X/Z with CSS. Values matched so the rigid CSS end
-   * pose equals applyMove facelets (no teleport at snap).
+   * Cubies use translate3d(x, -y, z) (model Y-up → CSS Y-down). Under that
+   * convention every CSS rotate*(θ) equals model rotate*(-θ), so CW CSS
+   * signs are the negation of model WCA quarter signs:
+   *   model U+90 D-90 R+90 L-90 F-90 B+90
+   *   → CSS  U-90 D+90 R-90 L+90 F+90 B-90
+   * Matched so the rigid layer end pose equals applyMove (no teleport).
    */
   function turnDegrees(face, quarterTurns) {
     const cw = {
       U: -90,
       D: 90,
-      R: 90,
-      L: -90,
-      F: -90,
-      B: 90,
+      R: -90,
+      L: 90,
+      F: 90,
+      B: -90,
     }[face];
     if (quarterTurns === 2) return cw * 2;
     if (quarterTurns === 3) return -cw;
