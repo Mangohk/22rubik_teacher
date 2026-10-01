@@ -1,6 +1,6 @@
 (() => {
   /** Increment by 1 on every shipped update (shown on step 1, top-right). */
-  const APP_VERSION = 2;
+  const APP_VERSION = 3;
 
   const COLORS = {
     U: "c-white",
@@ -417,22 +417,15 @@
     });
   }
 
-  async function animateToken(token) {
-    const { face, quarterTurns } = parseToken(token);
-
-    if (reducedMotion) {
-      applyMove(token);
-      renderCube();
-      return;
-    }
-
-    // Paint pre-move state, then spin the layer, then commit facelets.
-    renderCube();
-    const deg = turnDegrees(face, quarterTurns);
-    const ms = quarterTurns === 2 ? TURN_MS_180 : TURN_MS;
+  /** One 90° layer spin (CW or prime), then commit matching facelets. */
+  async function animateQuarter(face, prime) {
+    const token = prime ? `${face}'` : face;
+    const deg = turnDegrees(face, prime ? 3 : 1);
+    const ms = TURN_MS;
     const pred = layerPredicate(face);
     const moversIdx = [];
 
+    renderCube();
     cubieNodes.forEach((node, i) => {
       const c = CUBIES[i];
       node.classList.remove("is-turning");
@@ -457,6 +450,26 @@
     cubieNodes.forEach((node) => node.classList.remove("is-turning"));
     resetCubieTransforms();
     renderCube();
+  }
+
+  async function animateToken(token) {
+    const { face, quarterTurns } = parseToken(token);
+
+    if (reducedMotion) {
+      applyMove(token);
+      renderCube();
+      return;
+    }
+
+    // Doubles: two successive CW quarters (X then X), not one ±180 tween.
+    if (quarterTurns === 2) {
+      await animateQuarter(face, false);
+      await wait(60);
+      await animateQuarter(face, false);
+      return;
+    }
+
+    await animateQuarter(face, quarterTurns === 3);
   }
 
   function stopPlay() {
