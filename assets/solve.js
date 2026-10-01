@@ -145,7 +145,12 @@
     };
   }
 
-  function rotateFace(face, times) {
+  /**
+   * Rotate a facelet quad as viewed on that face.
+   * F/B index layout matches this CW sense; U/D/L/R use the inverse
+   * (see faceletColor indexing vs outward view).
+   */
+  function rotateFaceCW(face, times) {
     const t = ((times % 4) + 4) % 4;
     let f = face;
     for (let i = 0; i < t; i += 1) {
@@ -154,38 +159,50 @@
     return f;
   }
 
+  function rotateFaceCCW(face, times) {
+    return rotateFaceCW(face, (4 - (((times % 4) + 4) % 4)) % 4);
+  }
+
+  /** @deprecated alias used by flipWhiteDown */
+  function rotateFace(face, times) {
+    return rotateFaceCW(face, times);
+  }
+
+  // WCA CW = looking at the named face from outside. Side cycles derived from
+  // rigid corner turns + faceletColor index mapping (one geometric truth).
+
   function moveU(times = 1) {
-    faces.U = rotateFace(faces.U, times);
+    faces.U = rotateFaceCCW(faces.U, times);
     for (let n = 0; n < times; n += 1) {
       const tmp = [faces.F[0], faces.F[1]];
-      faces.F[0] = faces.R[0];
-      faces.F[1] = faces.R[1];
-      faces.R[0] = faces.B[0];
-      faces.R[1] = faces.B[1];
-      faces.B[0] = faces.L[0];
-      faces.B[1] = faces.L[1];
-      faces.L[0] = tmp[0];
-      faces.L[1] = tmp[1];
+      faces.F[0] = faces.L[0];
+      faces.F[1] = faces.L[1];
+      faces.L[0] = faces.B[0];
+      faces.L[1] = faces.B[1];
+      faces.B[0] = faces.R[0];
+      faces.B[1] = faces.R[1];
+      faces.R[0] = tmp[0];
+      faces.R[1] = tmp[1];
     }
   }
 
   function moveD(times = 1) {
-    faces.D = rotateFace(faces.D, times);
+    faces.D = rotateFaceCCW(faces.D, times);
     for (let n = 0; n < times; n += 1) {
       const tmp = [faces.F[2], faces.F[3]];
-      faces.F[2] = faces.L[2];
-      faces.F[3] = faces.L[3];
-      faces.L[2] = faces.B[2];
-      faces.L[3] = faces.B[3];
-      faces.B[2] = faces.R[2];
-      faces.B[3] = faces.R[3];
-      faces.R[2] = tmp[0];
-      faces.R[3] = tmp[1];
+      faces.F[2] = faces.R[2];
+      faces.F[3] = faces.R[3];
+      faces.R[2] = faces.B[2];
+      faces.R[3] = faces.B[3];
+      faces.B[2] = faces.L[2];
+      faces.B[3] = faces.L[3];
+      faces.L[2] = tmp[0];
+      faces.L[3] = tmp[1];
     }
   }
 
   function moveF(times = 1) {
-    faces.F = rotateFace(faces.F, times);
+    faces.F = rotateFaceCW(faces.F, times);
     for (let n = 0; n < times; n += 1) {
       const u2 = faces.U[2];
       const u3 = faces.U[3];
@@ -201,7 +218,7 @@
   }
 
   function moveB(times = 1) {
-    faces.B = rotateFace(faces.B, times);
+    faces.B = rotateFaceCW(faces.B, times);
     for (let n = 0; n < times; n += 1) {
       const u0 = faces.U[0];
       const u1 = faces.U[1];
@@ -217,34 +234,47 @@
   }
 
   function moveL(times = 1) {
-    faces.L = rotateFace(faces.L, times);
+    faces.L = rotateFaceCCW(faces.L, times);
     for (let n = 0; n < times; n += 1) {
       const u0 = faces.U[0];
       const u2 = faces.U[2];
-      faces.U[0] = faces.B[3];
-      faces.U[2] = faces.B[1];
-      faces.B[1] = faces.D[3];
-      faces.B[3] = faces.D[1];
-      faces.D[1] = faces.F[0];
-      faces.D[3] = faces.F[2];
-      faces.F[0] = u0;
-      faces.F[2] = u2;
+      const f0 = faces.F[0];
+      const f2 = faces.F[2];
+      const d0 = faces.D[0];
+      const d2 = faces.D[2];
+      const b1 = faces.B[1];
+      const b3 = faces.B[3];
+      // Left-layer sides only: DFL/DBL (D0/D2), not DFR/DBR.
+      faces.U[0] = f0;
+      faces.U[2] = f2;
+      faces.F[0] = d0;
+      faces.F[2] = d2;
+      faces.D[0] = b3;
+      faces.D[2] = b1;
+      faces.B[1] = u2;
+      faces.B[3] = u0;
     }
   }
 
   function moveR(times = 1) {
-    faces.R = rotateFace(faces.R, times);
+    faces.R = rotateFaceCCW(faces.R, times);
     for (let n = 0; n < times; n += 1) {
       const u1 = faces.U[1];
       const u3 = faces.U[3];
-      faces.U[1] = faces.F[1];
-      faces.U[3] = faces.F[3];
-      faces.F[1] = faces.D[1];
-      faces.F[3] = faces.D[3];
-      faces.D[1] = faces.B[2];
-      faces.D[3] = faces.B[0];
-      faces.B[0] = u3;
-      faces.B[2] = u1;
+      const f1 = faces.F[1];
+      const f3 = faces.F[3];
+      const d1 = faces.D[1];
+      const d3 = faces.D[3];
+      const b0 = faces.B[0];
+      const b2 = faces.B[2];
+      faces.U[1] = b2;
+      faces.U[3] = b0;
+      faces.B[0] = d3;
+      faces.B[2] = d1;
+      faces.D[1] = f1;
+      faces.D[3] = f3;
+      faces.F[1] = u1;
+      faces.F[3] = u3;
     }
   }
 
@@ -342,13 +372,18 @@
     return () => false;
   }
 
-  /** Visual degrees for one token; primes use a short opposite 90°. */
+  /**
+   * CSS degrees for one WCA CW token.
+   * Model Y-up vs CSS Y-down: U/D use rotateY with opposite model sign.
+   * L/R/F/B share model X/Z with CSS. Values matched so the rigid CSS end
+   * pose equals applyMove facelets (no teleport at snap).
+   */
   function turnDegrees(face, quarterTurns) {
     const cw = {
       U: -90,
       D: 90,
-      R: -90,
-      L: 90,
+      R: 90,
+      L: -90,
       F: -90,
       B: 90,
     }[face];
