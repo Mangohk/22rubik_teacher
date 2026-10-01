@@ -1,4 +1,7 @@
 (() => {
+  /** Increment by 1 on every shipped update (shown on step 1, top-right). */
+  const APP_VERSION = 1;
+
   const COLORS = {
     U: "c-white",
     D: "c-yellow",
@@ -117,6 +120,7 @@
   const els = {
     railFill: document.getElementById("rail-fill"),
     stepCount: document.getElementById("step-count"),
+    appVersion: document.getElementById("app-version"),
     stepPanel: document.getElementById("step-panel"),
     stepTitle: document.getElementById("step-title"),
     stepBody: document.getElementById("step-body"),
@@ -257,7 +261,9 @@
   }
 
   function moveR(times = 1) {
-    faces.R = rotateFaceCCW(faces.R, times);
+    // Inverted vs prior WCA-CW sense per user: token R' must spin the other way;
+    // R / R' / R2 stay mutual inverses with matching CSS degrees.
+    faces.R = rotateFaceCW(faces.R, times);
     for (let n = 0; n < times; n += 1) {
       const u1 = faces.U[1];
       const u3 = faces.U[3];
@@ -267,14 +273,14 @@
       const d3 = faces.D[3];
       const b0 = faces.B[0];
       const b2 = faces.B[2];
-      faces.U[1] = b2;
-      faces.U[3] = b0;
-      faces.B[0] = d3;
-      faces.B[2] = d1;
-      faces.D[1] = f1;
-      faces.D[3] = f3;
-      faces.F[1] = u1;
-      faces.F[3] = u3;
+      faces.U[1] = f1;
+      faces.U[3] = f3;
+      faces.F[1] = d1;
+      faces.F[3] = d3;
+      faces.D[1] = b2;
+      faces.D[3] = b0;
+      faces.B[0] = u3;
+      faces.B[2] = u1;
     }
   }
 
@@ -373,19 +379,16 @@
   }
 
   /**
-   * CSS degrees for one WCA CW token.
-   * Cubies use translate3d(x, -y, z) (model Y-up → CSS Y-down). Under that
-   * convention every CSS rotate*(θ) equals model rotate*(-θ), so CW CSS
-   * signs are the negation of model WCA quarter signs:
-   *   model U+90 D-90 R+90 L-90 F-90 B+90
-   *   → CSS  U-90 D+90 R-90 L+90 F+90 B-90
-   * Matched so the rigid layer end pose equals applyMove (no teleport).
+   * CSS degrees for one CW token (matched to applyMove / facelets).
+   * Cubies use translate3d(x, -y, z): every CSS rotate*(θ) ≡ model rotate*(-θ).
+   * R family uses the inverted sense vs classic WCA-CW so token R' matches
+   * the user-facing direction fix; R / R' / R2 stay opposites with continuity.
    */
   function turnDegrees(face, quarterTurns) {
     const cw = {
       U: -90,
       D: 90,
-      R: -90,
+      R: 90,
       L: 90,
       F: 90,
       B: -90,
@@ -576,6 +579,10 @@
     const pct = ((stepIndex + 1) / steps.length) * 100;
     els.railFill.style.width = `${pct}%`;
     els.stepCount.textContent = `${stepIndex + 1} / ${steps.length}`;
+    if (els.appVersion) {
+      els.appVersion.textContent = `v${APP_VERSION}`;
+      els.appVersion.hidden = stepIndex !== 0;
+    }
   }
 
   function setControlsBusy(busy) {
