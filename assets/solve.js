@@ -1,14 +1,20 @@
 (() => {
   /** Increment by 1 on every shipped update (shown on step 1, top-right). */
-  const APP_VERSION = 4;
+  const APP_VERSION = 5;
 
+  /**
+   * Sticker colour IDs → CSS classes. Face arrays store these keys
+   * (e.g. "yellow"), not U/D/F/B/L/R face letters. To tweak a demo pose,
+   * assign colour names on faces.U[i] etc. in setPreset (e.g. 1黃: leave
+   * U[0] yellow, set U[1]/U[2]/U[3] to red/orange/green).
+   */
   const COLORS = {
-    U: "c-white",
-    D: "c-yellow",
-    F: "c-green",
-    B: "c-blue",
-    L: "c-orange",
-    R: "c-red",
+    white: "c-white",
+    yellow: "c-yellow",
+    green: "c-green",
+    blue: "c-blue",
+    orange: "c-orange",
+    red: "c-red",
   };
 
   const FACE_ORDER = ["U", "R", "F", "D", "L", "B"];
@@ -140,12 +146,12 @@
 
   function solvedFaces() {
     return {
-      U: ["U", "U", "U", "U"],
-      D: ["D", "D", "D", "D"],
-      F: ["F", "F", "F", "F"],
-      B: ["B", "B", "B", "B"],
-      L: ["L", "L", "L", "L"],
-      R: ["R", "R", "R", "R"],
+      U: ["white", "white", "white", "white"],
+      D: ["yellow", "yellow", "yellow", "yellow"],
+      F: ["green", "green", "green", "green"],
+      B: ["blue", "blue", "blue", "blue"],
+      L: ["orange", "orange", "orange", "orange"],
+      R: ["red", "red", "red", "red"],
     };
   }
 
@@ -483,26 +489,26 @@
       flipWhiteDown();
       if (caseId === "1") {
         // 1 黃：U top-left (UBL / U[0]) stays yellow; other three U stickers non-yellow
-        faces.U[1] = "R";
-        faces.R[0] = "U";
-        faces.U[2] = "L";
-        faces.L[1] = "U";
-        faces.U[3] = "F";
-        faces.F[1] = "U";
+        faces.U[1] = "red";
+        faces.R[0] = "white";
+        faces.U[2] = "orange";
+        faces.L[1] = "white";
+        faces.U[3] = "green";
+        faces.F[1] = "white";
       } else if (caseId === "2") {
-        faces.U[1] = "R";
-        faces.R[0] = "U";
-        faces.U[3] = "F";
-        faces.F[1] = "U";
+        faces.U[1] = "red";
+        faces.R[0] = "white";
+        faces.U[3] = "green";
+        faces.F[1] = "white";
       } else if (caseId === "0") {
-        faces.U[0] = "B";
-        faces.B[1] = "U";
-        faces.U[1] = "R";
-        faces.R[0] = "U";
-        faces.U[2] = "L";
-        faces.L[1] = "U";
-        faces.U[3] = "F";
-        faces.F[1] = "U";
+        faces.U[0] = "blue";
+        faces.B[1] = "white";
+        faces.U[1] = "red";
+        faces.R[0] = "white";
+        faces.U[2] = "orange";
+        faces.L[1] = "white";
+        faces.U[3] = "green";
+        faces.F[1] = "white";
       }
     } else if (name === "almost") {
       flipWhiteDown();
