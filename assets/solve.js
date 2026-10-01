@@ -1,6 +1,6 @@
 (() => {
   /** Increment by 1 on every shipped update (shown on step 1, top-right). */
-  const APP_VERSION = 3;
+  const APP_VERSION = 4;
 
   const COLORS = {
     U: "c-white",
@@ -482,12 +482,13 @@
     if (name === "yellow-work") {
       flipWhiteDown();
       if (caseId === "1") {
-        faces.U[0] = "F";
-        faces.F[0] = "U";
+        // 1 黃：U top-left (UBL / U[0]) stays yellow; other three U stickers non-yellow
         faces.U[1] = "R";
         faces.R[0] = "U";
-        faces.U[3] = "L";
+        faces.U[2] = "L";
         faces.L[1] = "U";
+        faces.U[3] = "F";
+        faces.F[1] = "U";
       } else if (caseId === "2") {
         faces.U[1] = "R";
         faces.R[0] = "U";
