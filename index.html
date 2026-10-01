@@ -3,111 +3,100 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>22rubik_teacher</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+TC:wght@400;600&family=Syne:wght@700;800&display=swap"
-      rel="stylesheet"
+    <title>22rubik_teacher · 2×2 解法步驟</title>
+    <meta
+      name="description"
+      content="2x2 Rubik beginner steps based on David Guo's method, with Grubiks/Ruwix-style step navigation."
     />
-    <style>
-      :root {
-        --ink: #071512;
-        --paper: #f3fff8;
-        --fog: #b7d4c8;
-        --accent: #ffb020;
-        --mint: #3ddea8;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        min-height: 100vh;
-        font-family: "IBM Plex Sans TC", sans-serif;
-        color: var(--paper);
-        background:
-          radial-gradient(900px 480px at 15% -10%, rgba(61, 222, 168, 0.24), transparent 55%),
-          radial-gradient(700px 420px at 100% 10%, rgba(255, 176, 32, 0.2), transparent 50%),
-          linear-gradient(160deg, #071512 0%, #0f2a24 50%, #132018 100%);
-        display: grid;
-        place-items: center;
-        padding: 1.5rem;
-      }
-
-      main {
-        width: min(640px, 100%);
-        text-align: left;
-        animation: rise 0.8s ease both;
-      }
-
-      .brand {
-        font-family: "Syne", sans-serif;
-        font-weight: 800;
-        font-size: clamp(2.4rem, 8vw, 4rem);
-        line-height: 1;
-        margin: 0 0 1rem;
-        letter-spacing: 0.02em;
-      }
-
-      .brand span {
-        color: var(--accent);
-      }
-
-      p {
-        margin: 0 0 1.5rem;
-        color: var(--fog);
-        font-size: 1.1rem;
-        line-height: 1.55;
-        max-width: 34ch;
-      }
-
-      .cta {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.85rem 1.2rem;
-        border-radius: 14px;
-        background: linear-gradient(135deg, var(--accent), #ff8d2a);
-        color: var(--ink);
-        font-weight: 700;
-        text-decoration: none;
-        box-shadow: 0 16px 40px rgba(255, 176, 32, 0.25);
-        transition: transform 0.2s ease;
-      }
-
-      .cta:hover {
-        transform: translateY(-2px);
-      }
-
-      .cta::after {
-        content: "→";
-        transition: transform 0.2s ease;
-      }
-
-      .cta:hover::after {
-        transform: translateX(3px);
-      }
-
-      @keyframes rise {
-        from {
-          opacity: 0;
-          transform: translateY(14px);
-        }
-        to {
-          opacity: 1;
-          transform: none;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="assets/solve.css" />
   </head>
   <body>
-    <main>
-      <h1 class="brand">22rubik<span>_teacher</span></h1>
-      <p>學解 2×2 魔術方塊。先從逐步教學開始。</p>
-      <a class="cta" href="solve.html">開始 2×2 解法步驟</a>
-    </main>
+    <div class="shell">
+      <header class="topbar">
+        <a class="brand" href="./">22rubik<span>_teacher</span></a>
+        <p class="credit">
+          解法流程參考
+          <a
+            href="https://www.davidguo.idv.tw/Cube/22beginner.htm"
+            target="_blank"
+            rel="noopener noreferrer"
+            >David Guo 二階簡易解法</a
+          >
+          · UI 參考 Grubiks / Ruwix
+        </p>
+      </header>
+
+      <div class="stage">
+        <section class="panel lesson" aria-labelledby="step-title">
+          <div class="kicker">逐步教學 · Back / Next</div>
+          <h1>2×2 魔術方塊初學者解法</h1>
+          <p class="lead">
+            一次只看一步。用下方進度列或「上一步／下一步」前進，公式可逐步或自動播放。
+          </p>
+
+          <div class="progress" id="progress" aria-label="解法步驟進度"></div>
+
+          <h2 class="step-title" id="step-title">載入中…</h2>
+          <p class="step-body" id="step-body"></p>
+
+          <div class="cases" id="cases" hidden></div>
+
+          <div class="alg-block" id="alg-block" hidden>
+            <div class="alg-label" id="alg-label"></div>
+            <div class="moves" id="moves" aria-live="polite"></div>
+            <div class="controls">
+              <button class="btn btn-primary" type="button" id="btn-play">
+                播放公式
+              </button>
+              <button class="btn btn-secondary" type="button" id="btn-step">
+                下一步移動
+              </button>
+              <button class="btn btn-ghost" type="button" id="btn-reset">
+                重設方塊
+              </button>
+            </div>
+          </div>
+
+          <div class="nav-row">
+            <button class="btn btn-ghost" type="button" id="btn-prev">
+              ← 上一步
+            </button>
+            <button class="btn btn-primary" type="button" id="btn-next">
+              下一步 →
+            </button>
+          </div>
+
+          <p class="footnote">
+            圖示與動畫為本站重繪，並未複製原站圖片。公式依原站編號解讀為標準 WCA
+            符號。知名解法站呈現方式參考：
+            <a
+              href="https://www.grubiks.com/solvers/rubiks-cube-3x3x3/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Grubiks</a
+            >
+            （Back/Next）、
+            <a
+              href="https://ruwix.com/twisty-puzzles/2x2x2-rubiks-cube-pocket/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Ruwix 2×2</a
+            >
+            （公式逐步顯示）。
+          </p>
+        </section>
+
+        <aside class="panel viz" aria-label="方塊示意">
+          <p class="hint">
+            <span class="hold" id="hold">拿著方塊…</span>
+          </p>
+          <div class="cube-stage">
+            <div class="cube" id="cube" aria-hidden="true"></div>
+          </div>
+          <p class="hint">拖曳無需——用「播放公式」看每一手下在方塊上的變化。</p>
+        </aside>
+      </div>
+    </div>
+    <script src="assets/solve.js"></script>
   </body>
 </html>
