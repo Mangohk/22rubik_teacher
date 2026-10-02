@@ -229,21 +229,25 @@ h1 {
   font-weight: 700;
 }
 
-/* Case-focus outlines on demo stickers (step 3 yellow-work). */
+/* Sticker / face focus outlines — border stays visible under 3D transforms. */
 .sticker.is-focus {
+  border: 4px solid #e4572e;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
-    0 0 0 3px rgba(228, 87, 46, 0.85);
-  filter: brightness(1.08);
-  z-index: 1;
+    inset 0 0 0 2px rgba(255, 255, 255, 0.9),
+    0 0 0 3px rgba(228, 87, 46, 0.55),
+    0 0 16px rgba(228, 87, 46, 0.7);
+  filter: brightness(1.14);
+  z-index: 3;
 }
 
 .sticker.is-focus-avoid {
+  border: 4px solid #0f766e;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.15),
-    0 0 0 3px rgba(15, 118, 110, 0.8);
-  filter: brightness(1.05);
-  z-index: 1;
+    inset 0 0 0 2px rgba(255, 255, 255, 0.85),
+    0 0 0 3px rgba(15, 118, 110, 0.5),
+    0 0 16px rgba(15, 118, 110, 0.65);
+  filter: brightness(1.12);
+  z-index: 3;
 }
 
 .cases {
@@ -433,10 +437,19 @@ h1 {
   place-items: center;
   animation: float-y 5.5s ease-in-out infinite;
   perspective: 900px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.cube-orbit.turning {
+.cube-orbit.turning,
+.cube-orbit.is-dragging {
   animation: none;
+}
+
+.cube-orbit.is-dragging {
+  cursor: grabbing;
 }
 
 .cube-orbit::before {
@@ -458,18 +471,67 @@ h1 {
   transform: scale(1);
 }
 
+.cube-rig {
+  width: 168px;
+  height: 168px;
+  position: relative;
+  transform-style: preserve-3d;
+  /* Viewpoint set in JS (drag orbit + step/case defaults). */
+  transform: rotateX(-28deg) rotateY(38deg);
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
 .cube {
   width: 168px;
   height: 168px;
   position: relative;
   transform-style: preserve-3d;
-  transform: rotateX(-28deg) rotateY(38deg);
-  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* 2 黃：turn to show the yellow on the back of the top-left corner */
-.cube-orbit.case-yaw-back .cube {
-  transform: rotateX(-26deg) rotateY(-138deg);
+/* 3D marker outside the green (F) face; rides with cube-rig viewpoint. */
+.face-arrow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 112px;
+  height: 260px;
+  margin: -130px 0 0 -56px;
+  transform-style: preserve-3d;
+  /* Outside F (+Z); tip points away from the face. */
+  transform: translateZ(280px) rotateX(90deg);
+  color: #ffffff;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.face-arrow .facing-label {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: #ffffff;
+  text-shadow:
+    0 0 2px rgba(12, 35, 64, 0.9),
+    0 1px 4px rgba(12, 35, 64, 0.55),
+    0 0 10px rgba(12, 35, 64, 0.35);
+  white-space: nowrap;
+}
+
+.face-arrow svg {
+  display: block;
+  width: 112px;
+  height: 220px;
+  overflow: visible;
+  filter:
+    drop-shadow(0 0 2px rgba(12, 35, 64, 0.85))
+    drop-shadow(0 0 8px rgba(12, 35, 64, 0.45))
+    drop-shadow(0 3px 6px rgba(12, 35, 64, 0.35));
 }
 
 .cubie {
@@ -520,9 +582,10 @@ h1 {
 .cube-orbit[data-hint="F"] .face-f,
 .cube-orbit[data-hint="L"] .face-l {
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
-    0 0 0 2px rgba(228, 87, 46, 0.7);
-  filter: brightness(1.06);
+    inset 0 0 0 3px rgba(255, 255, 255, 0.75),
+    0 0 0 6px rgba(228, 87, 46, 1),
+    0 0 16px rgba(228, 87, 46, 0.65);
+  filter: brightness(1.12);
 }
 
 .c-white {
@@ -631,6 +694,7 @@ h1 {
 
 @media (prefers-reduced-motion: reduce) {
   .cube-orbit,
+  .cube-rig,
   .copy.enter,
   .mast,
   .nav,
@@ -656,7 +720,7 @@ h1 {
           <div class="rail-fill" id="rail-fill"></div>
         </div>
         <div class="mast-end">
-          <p class="app-version" id="app-version" hidden>v11</p>
+          <p class="app-version" id="app-version" hidden>v36</p>
           <p class="step-count" id="step-count">1 / 7</p>
         </div>
       </header>
@@ -678,6 +742,8 @@ h1 {
               <button type="button" data-move="F'">F'</button>
               <button type="button" data-move="U">U</button>
               <button type="button" data-move="U'">U'</button>
+              <button type="button" data-move="D">D</button>
+              <button type="button" data-move="D'">D'</button>
               <!-- L/L' labels swapped vs tokens so UI direction matches animation -->
               <button type="button" data-move="L'">L</button>
               <button type="button" data-move="L">L'</button>
@@ -697,7 +763,42 @@ h1 {
 
         <div class="viz">
           <div class="cube-orbit" id="cube-orbit" data-hint="">
-            <div class="cube" id="cube" aria-hidden="true"></div>
+            <div class="cube-rig" id="cube-rig">
+              <div class="cube" id="cube" aria-hidden="true"></div>
+              <div class="face-arrow" title="Facing green face" aria-hidden="true">
+                <p class="facing-label">Facing</p>
+                <svg viewBox="0 0 112 220">
+                  <path
+                    d="M56 24 L56 156"
+                    fill="none"
+                    stroke="rgba(12, 35, 64, 0.35)"
+                    stroke-width="28"
+                    stroke-linecap="round"
+                  />
+                  <path
+                    d="M56 24 L56 156"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="18"
+                    stroke-linecap="round"
+                  />
+                  <path
+                    d="M12 84 L56 20 L100 84"
+                    fill="rgba(12, 35, 64, 0.35)"
+                    stroke="rgba(12, 35, 64, 0.35)"
+                    stroke-width="8"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M20 80 L56 32 L92 80 Z"
+                    fill="currentColor"
+                    stroke="currentColor"
+                    stroke-width="4"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -722,7 +823,7 @@ h1 {
     <script>
 (() => {
   /** Increment by 1 on every shipped update (shown on step 1, top-right). */
-  const APP_VERSION = 11;
+  const APP_VERSION = 36;
 
   /**
    * Sticker colour IDs → CSS classes. Face arrays store these keys
@@ -751,6 +852,34 @@ h1 {
 
   const ALG1 = ["F", "R'", "F", "L2", "F'", "R", "F", "L2", "F2"];
   const ALG2 = ["R'", "U'", "R", "U'", "R'", "U2", "R"];
+  /**
+   * 1 黃 setup from yellow-up: R U R' U R U2 R' (then U' so yellow sits at UBL).
+   * Note: ends with R' — the usual antisune; a bare final R breaks the white face.
+   */
+  const YELLOW_CASE1_SETUP = ["R", "U", "R'", "U", "R", "U2", "R'"];
+  /** Inverse of ALG2 — used for 0 黃 demo from solved yellow-up. */
+  const ALG2_INV = ["R'", "U2", "R", "U", "R'", "U", "R"];
+  /**
+   * 2黃 hold: yellow on UBL faces back (B), two yellows on U.
+   * Built as ALG2 → U2 → ALG2_INV from solved yellow-up (keeps white on D).
+   */
+  const YELLOW_CASE2_SETUP = [
+    "R'",
+    "U'",
+    "R",
+    "U'",
+    "R'",
+    "U2",
+    "R",
+    "U2",
+    "R'",
+    "U2",
+    "R",
+    "U",
+    "R'",
+    "U",
+    "R",
+  ];
 
   /**
    * Step 3 (yellow-work) case copy + which stickers to outline.
@@ -761,6 +890,7 @@ h1 {
     "1": {
       hold: "1 黃 · 上面左上角必須是黃",
       tip: `只有一格黃：把那格黃放到<strong>上面左上角</strong>（圖中高亮），再轉公式 2（通常兩次）。`,
+      // Top face (U), UBL — the yellow sticker to check for 1 黃
       focus: [{ face: "U", x: -1, y: 1, z: -1 }],
       focusClass: "is-focus",
     },
@@ -772,10 +902,11 @@ h1 {
     },
     "0": {
       hold: "0 黃 · 後排兩格都不要黃",
-      tip: `零格黃：對齊拿法，讓<strong>上面後排兩格（左上、右上）都不是黃色</strong>（圖中高亮），再轉公式 2。`,
+      tip: `零格黃：對齊拿法，讓<strong>左面左上、右面右上</strong>那兩格都不是黃色（圖中高亮），再轉公式 2。`,
+      // L face upper-left (UBL) and R face upper-right (UBR) — both back-row sides
       focus: [
-        { face: "U", x: -1, y: 1, z: -1 },
-        { face: "U", x: 1, y: 1, z: -1 },
+        { face: "L", x: -1, y: 1, z: -1 },
+        { face: "R", x: 1, y: 1, z: -1 },
       ],
       focusClass: "is-focus-avoid",
     },
@@ -821,17 +952,23 @@ h1 {
       hint: "U",
       showAlg: null,
       cases: null,
-      preset: "white-up",
+      preset: "solved",
     },
     {
       id: "step2",
       title: "第二步：白色側面調好",
       body: `看白層側面有無<strong>同色成對</strong>。放到<strong>左手邊</strong>，轉公式 1。若沒有成對，先轉一次公式 1。`,
       hold: "同色對 · 放左手邊",
-      hint: "L",
+      hint: "",
       showAlg: "alg1",
       cases: null,
-      preset: "white-layer",
+      preset: "after-alg1",
+      // Left face upper two stickers only (UBL + UFL)
+      focus: [
+        { face: "L", x: -1, y: 1, z: -1 },
+        { face: "L", x: -1, y: 1, z: 1 },
+      ],
+      focusClass: "is-focus",
     },
     {
       id: "step3",
@@ -851,7 +988,7 @@ h1 {
       hint: "L",
       showAlg: "alg1",
       cases: null,
-      preset: "almost",
+      preset: "solved",
     },
     {
       id: "done",
@@ -870,9 +1007,25 @@ h1 {
   let playing = false;
   let animating = false;
   let playCursor = -1;
+  /** True after the last alg move has been executed; cube stays at the end pose. */
+  let algFinished = false;
+  /**
+   * Teaching highlights only show on the step's initial pose. Cleared after any
+   * cube turn; restored when a step/case is (re)initiated or cube is reset.
+   */
+  let focusEnabled = true;
   let activeAlg = [];
   /** @type {HTMLElement[]} */
   let cubieNodes = [];
+
+  /** Default camera for most steps (matches prior CSS). */
+  const VIEW_DEFAULT = { x: -28, y: 38 };
+  let viewX = VIEW_DEFAULT.x;
+  let viewY = VIEW_DEFAULT.y;
+  let viewDragging = false;
+  let viewPointerId = null;
+  let viewLastX = 0;
+  let viewLastY = 0;
 
   const els = {
     railFill: document.getElementById("rail-fill"),
@@ -894,6 +1047,7 @@ h1 {
     btnStep: document.getElementById("btn-step"),
     btnReset: document.getElementById("btn-reset"),
     cube: document.getElementById("cube"),
+    cubeRig: document.getElementById("cube-rig"),
     cubeOrbit: document.getElementById("cube-orbit"),
   };
 
@@ -951,17 +1105,19 @@ h1 {
   }
 
   function moveD(times = 1) {
-    faces.D = rotateFaceCCW(faces.D, times);
+    // Facelets inverted vs prior sense so D / D' snap matches rotateY end pose
+    // (was applying the opposite of the animated quarter).
+    faces.D = rotateFaceCW(faces.D, times);
     for (let n = 0; n < times; n += 1) {
       const tmp = [faces.F[2], faces.F[3]];
-      faces.F[2] = faces.R[2];
-      faces.F[3] = faces.R[3];
-      faces.R[2] = faces.B[2];
-      faces.R[3] = faces.B[3];
-      faces.B[2] = faces.L[2];
-      faces.B[3] = faces.L[3];
-      faces.L[2] = tmp[0];
-      faces.L[3] = tmp[1];
+      faces.F[2] = faces.L[2];
+      faces.F[3] = faces.L[3];
+      faces.L[2] = faces.B[2];
+      faces.L[3] = faces.B[3];
+      faces.B[2] = faces.R[2];
+      faces.B[3] = faces.R[3];
+      faces.R[2] = tmp[0];
+      faces.R[3] = tmp[1];
     }
   }
 
@@ -1098,17 +1254,22 @@ h1 {
   }
 
   function paintCubie(node, x, y, z) {
+    const focus = currentFocusTargets();
     FACE_ORDER.forEach((face) => {
       const sticker = node.querySelector(`[data-face="${face}"]`);
       if (!sticker) return;
       const color = faceletColor(face, x, y, z);
       if (!color) {
         sticker.hidden = true;
+        sticker.className = `sticker face-${face.toLowerCase()}`;
         return;
       }
       sticker.hidden = false;
-      sticker.className = `sticker face-${face.toLowerCase()} ${COLORS[color]}`;
-      sticker.classList.remove("is-focus", "is-focus-avoid");
+      const focusHit = focus.targets.find(
+        (t) => t.face === face && t.x === x && t.y === y && t.z === z
+      );
+      const focusCls = focusHit ? ` ${focus.focusClass}` : "";
+      sticker.className = `sticker face-${face.toLowerCase()} ${COLORS[color]}${focusCls}`;
     });
   }
 
@@ -1120,28 +1281,75 @@ h1 {
     });
   }
 
-  /** Outline the U/B stickers that the active yellow-work case cares about. */
-  function applyYellowCaseHighlights() {
-    clearStickerFocus();
-    els.cubeOrbit.classList.remove("case-yaw-back");
+  /** Active highlight targets for this step / yellow case (empty if none). */
+  function currentFocusTargets() {
+    if (!focusEnabled) return { targets: [], focusClass: "is-focus" };
     const step = steps[stepIndex];
-    if (!step || step.preset !== "yellow-work") return;
-    const cfg = YELLOW_CASES[caseId];
-    if (!cfg) return;
-    // 2 黃：yaw so the back sticker behind top-left is visible
-    if (caseId === "2") els.cubeOrbit.classList.add("case-yaw-back");
-    cfg.focus.forEach(({ face, x, y, z }) => {
+    if (!step) return { targets: [], focusClass: "is-focus" };
+    if (step.preset === "yellow-work") {
+      const cfg = YELLOW_CASES[caseId];
+      if (!cfg) return { targets: [], focusClass: "is-focus" };
+      return { targets: cfg.focus, focusClass: cfg.focusClass };
+    }
+    if (step.focus && step.focus.length) {
+      return {
+        targets: step.focus,
+        focusClass: step.focusClass || "is-focus",
+      };
+    }
+    return { targets: [], focusClass: "is-focus" };
+  }
+
+  function enableStepFocus() {
+    focusEnabled = true;
+  }
+
+  function dismissStepFocus() {
+    if (!focusEnabled) return;
+    focusEnabled = false;
+    clearStickerFocus();
+  }
+
+  function defaultViewForStep() {
+    return { x: VIEW_DEFAULT.x, y: VIEW_DEFAULT.y };
+  }
+
+  function applyCubeView(animate) {
+    const rig = els.cubeRig || els.cube;
+    if (animate && !reducedMotion) {
+      rig.style.transition =
+        "transform 0.45s cubic-bezier(0.22, 1, 0.36, 1)";
+    } else {
+      rig.style.transition = "none";
+    }
+    rig.style.transform = `rotateX(${viewX}deg) rotateY(${viewY}deg)`;
+  }
+
+  /** Snap viewpoint back to the current step/case default. */
+  function resetCubeView(animate = true) {
+    const d = defaultViewForStep();
+    viewX = d.x;
+    viewY = d.y;
+    applyCubeView(animate);
+  }
+
+  /** Re-apply sticker outlines after paints / moves. */
+  function applyYellowCaseHighlights() {
+    const { targets, focusClass } = currentFocusTargets();
+    clearStickerFocus();
+    if (!targets.length) return;
+    targets.forEach(({ face, x, y, z }) => {
       const i = CUBIES.findIndex((c) => c.x === x && c.y === y && c.z === z);
       if (i < 0) return;
       const sticker = cubieNodes[i]?.querySelector(`[data-face="${face}"]`);
-      if (sticker && !sticker.hidden) sticker.classList.add(cfg.focusClass);
+      if (sticker && !sticker.hidden) sticker.classList.add(focusClass);
     });
   }
 
   function applyYellowCaseCopy() {
     const step = steps[stepIndex];
     if (!step) return;
-    if (step.preset !== "yellow-work") {
+    if (!step.cases) {
       els.hold.textContent = step.hold;
       els.stepBody.innerHTML = step.body;
       return;
@@ -1253,6 +1461,9 @@ h1 {
   }
 
   async function animateToken(token) {
+    // Any real turn dismisses teaching highlights for this step visit.
+    dismissStepFocus();
+
     const { face, quarterTurns } = parseToken(token);
 
     if (reducedMotion) {
@@ -1277,38 +1488,45 @@ h1 {
     els.btnPlay.textContent = "播放";
   }
 
+  /**
+   * Initial cube pose for a step. Base is always solved with white on top.
+   * Some steps then apply a fixed move sequence for the demo / playback start.
+   */
   function setPreset(name) {
     faces = solvedFaces();
     if (name === "yellow-work") {
+      // White down, yellow on U — then case-specific legal setups.
       flipWhiteDown();
       if (caseId === "1") {
-        // 1 黃：U top-left (UBL / U[0]) stays yellow; other three U stickers non-yellow
-        faces.U[1] = "red";
-        faces.R[0] = "white";
-        faces.U[2] = "orange";
-        faces.L[1] = "white";
-        faces.U[3] = "green";
-        faces.F[1] = "white";
+        // 1 黃: yellow face up → R U R' U R U2 R' → U' (yellow at UBL)
+        YELLOW_CASE1_SETUP.forEach((token) => applyMove(token));
+        applyMove("U'");
       } else if (caseId === "2") {
-        // 2 黃 (David Guo)：左上角黃色朝背後 — UBL's B sticker yellow; two yellows remain on U
-        faces.U[0] = "blue";
-        faces.B[1] = "yellow";
-        faces.U[3] = "green";
-        faces.F[1] = "white";
+        // 2 黃 with UBL yellow facing back; 公式 2 → 1 黃.
+        YELLOW_CASE2_SETUP.forEach((token) => applyMove(token));
       } else if (caseId === "0") {
-        // 0 黃：no yellow on U; back row U[0]+U[1] must not be yellow (all four clear)
-        faces.U[0] = "blue";
-        faces.B[1] = "white";
-        faces.U[1] = "red";
-        faces.R[0] = "white";
-        faces.U[2] = "orange";
-        faces.L[1] = "white";
-        faces.U[3] = "green";
-        faces.F[1] = "white";
+        // 0 黃 (back row clear); 公式 2 → 1 黃, twice → solved yellow.
+        ALG2_INV.forEach((token) => applyMove(token));
+        ALG2_INV.forEach((token) => applyMove(token));
       }
-    } else if (name === "almost") {
-      flipWhiteDown();
-      moveU(1);
+    } else if (name === "after-alg1") {
+      // 第二步 demo scramble (2×2: lowercase d/r = D/R).
+      // R U R' L D' L' R' d r d' r' d r
+      [
+        "R",
+        "U",
+        "R'",
+        "L",
+        "D'",
+        "L'",
+        "R'",
+        "D",
+        "R",
+        "D'",
+        "R'",
+        "D",
+        "R",
+      ].forEach((token) => applyMove(token));
     }
     resetCubieTransforms();
     renderCube();
@@ -1334,7 +1552,7 @@ h1 {
 
   function renderPracticeMoves() {
     const step = steps[stepIndex];
-    const show = step.id === "notation";
+    const show = step.id === "intro" || step.id === "notation";
     if (!els.practiceMoves) return;
     els.practiceMoves.hidden = !show;
     setPracticeBusy(animating || playing);
@@ -1350,7 +1568,7 @@ h1 {
   async function practiceMove(token) {
     if (animating || playing) return;
     const step = steps[stepIndex];
-    if (!step || step.id !== "notation") return;
+    if (!step || (step.id !== "intro" && step.id !== "notation")) return;
     animating = true;
     setControlsBusy(true);
     setPracticeBusy(true);
@@ -1367,6 +1585,7 @@ h1 {
     const step = steps[stepIndex];
     stopPlay();
     playCursor = -1;
+    algFinished = false;
     renderPracticeMoves();
 
     if (!step.showAlg) {
@@ -1410,10 +1629,12 @@ h1 {
       btn.classList.toggle("active", caseId === id);
       btn.addEventListener("click", () => {
         caseId = id;
+        enableStepFocus();
         renderCases();
         applyYellowCaseCopy();
         setPreset(step.preset);
         loadAlgForStep();
+        resetCubeView(true);
       });
       els.cases.appendChild(btn);
     });
@@ -1446,6 +1667,7 @@ h1 {
 
   function renderStep() {
     const step = steps[stepIndex];
+    enableStepFocus();
     els.stepTitle.textContent = step.title;
     els.cubeOrbit.dataset.hint = step.hint || "";
     els.btnNext.textContent =
@@ -1455,6 +1677,7 @@ h1 {
     applyYellowCaseCopy();
     setPreset(step.preset);
     loadAlgForStep();
+    resetCubeView(false);
     setControlsBusy(false);
     animateStepPanel();
   }
@@ -1468,15 +1691,22 @@ h1 {
 
   async function stepOnce() {
     if (animating || !activeAlg.length) return;
-    if (playCursor >= activeAlg.length - 1) {
+
+    // After the alg finished, the next 下一步手 only restores the step initial pose.
+    if (algFinished) {
+      algFinished = false;
       playCursor = -1;
+      enableStepFocus();
       setPreset(steps[stepIndex].preset);
       paintMoveHighlight();
       return;
     }
+
     if (playCursor === -1) {
       setPreset(steps[stepIndex].preset);
     }
+    if (playCursor >= activeAlg.length - 1) return;
+
     playCursor += 1;
     paintMoveHighlight();
     animating = true;
@@ -1486,6 +1716,9 @@ h1 {
       await animateToken(activeAlg[playCursor]);
     } finally {
       animating = false;
+      if (playCursor >= activeAlg.length - 1) {
+        algFinished = true;
+      }
       if (!playing) setControlsBusy(false);
     }
   }
@@ -1497,11 +1730,16 @@ h1 {
       setControlsBusy(false);
       return;
     }
-    if (playCursor >= activeAlg.length - 1 || playCursor === -1) {
+
+    // Replay from the step initial pose when idle at start or after a finished run.
+    if (algFinished || playCursor === -1 || playCursor >= activeAlg.length - 1) {
+      algFinished = false;
       playCursor = -1;
+      enableStepFocus();
       setPreset(steps[stepIndex].preset);
       paintMoveHighlight();
     }
+
     playing = true;
     els.btnPlay.textContent = "暫停";
     setControlsBusy(true);
@@ -1512,6 +1750,7 @@ h1 {
       if (!playing) break;
       await wait(90);
     }
+    // Leave the cube on the finished pose; algFinished is set inside stepOnce.
     stopPlay();
     setControlsBusy(false);
   }
@@ -1547,6 +1786,8 @@ h1 {
     if (animating) return;
     stopPlay();
     playCursor = -1;
+    algFinished = false;
+    enableStepFocus();
     setPreset(steps[stepIndex].preset);
     paintMoveHighlight();
     setControlsBusy(false);
@@ -1571,8 +1812,53 @@ h1 {
     }
     stopPlay();
     playCursor = -1;
+    algFinished = false;
     renderMoves(activeAlg);
     paintMoveHighlight();
+  });
+
+  // Orbit the viewpoint by dragging on the cube area. Double-click resets.
+  els.cubeOrbit.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
+    viewDragging = true;
+    viewPointerId = event.pointerId;
+    viewLastX = event.clientX;
+    viewLastY = event.clientY;
+    els.cubeOrbit.classList.add("is-dragging");
+    els.cubeOrbit.setPointerCapture(event.pointerId);
+    applyCubeView(false);
+  });
+
+  els.cubeOrbit.addEventListener("pointermove", (event) => {
+    if (!viewDragging || event.pointerId !== viewPointerId) return;
+    const dx = event.clientX - viewLastX;
+    const dy = event.clientY - viewLastY;
+    viewLastX = event.clientX;
+    viewLastY = event.clientY;
+    // Horizontal drag → yaw; vertical drag → pitch (clamped so U stays mostly up).
+    viewY += dx * 0.45;
+    viewX = Math.max(-88, Math.min(88, viewX - dy * 0.45));
+    applyCubeView(false);
+  });
+
+  function endViewDrag(event) {
+    if (!viewDragging || event.pointerId !== viewPointerId) return;
+    viewDragging = false;
+    viewPointerId = null;
+    els.cubeOrbit.classList.remove("is-dragging");
+    try {
+      els.cubeOrbit.releasePointerCapture(event.pointerId);
+    } catch (_) {
+      /* already released */
+    }
+  }
+
+  els.cubeOrbit.addEventListener("pointerup", endViewDrag);
+  els.cubeOrbit.addEventListener("pointercancel", endViewDrag);
+
+  els.cubeOrbit.addEventListener("dblclick", (event) => {
+    event.preventDefault();
+    resetCubeView(true);
   });
 
   buildCubeDom();
