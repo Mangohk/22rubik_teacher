@@ -350,7 +350,19 @@ h1 {
   margin: 0 0 0.7rem;
   font-size: 0.9rem;
   color: var(--ink-soft);
+}
+
+.alg-seq + .alg-seq {
+  margin-top: 1rem;
+}
+
+.alg-seq.is-playable .alg-name {
   cursor: pointer;
+}
+
+.alg-seq.is-active .alg-name {
+  color: var(--ink);
+  font-weight: 700;
 }
 
 .moves {
@@ -720,7 +732,7 @@ h1 {
           <div class="rail-fill" id="rail-fill"></div>
         </div>
         <div class="mast-end">
-          <p class="app-version" id="app-version" hidden>v1.0</p>
+          <p class="app-version" id="app-version" hidden>v1.1</p>
           <p class="step-count" id="step-count">1 / 7</p>
         </div>
       </header>
@@ -751,8 +763,14 @@ h1 {
           </div>
 
           <div class="alg" id="alg-block" hidden>
-            <p class="alg-name" id="alg-label"></p>
-            <div class="moves" id="moves" aria-live="polite"></div>
+            <div class="alg-seq is-active" id="alg-seq-primary">
+              <p class="alg-name" id="alg-label"></p>
+              <div class="moves" id="moves" aria-live="polite"></div>
+            </div>
+            <div class="alg-seq" id="alg-seq-secondary" hidden>
+              <p class="alg-name" id="alg-label-2"></p>
+              <div class="moves" id="moves-2" aria-live="polite"></div>
+            </div>
             <div class="alg-actions">
               <button type="button" class="text-btn" id="btn-play">播放</button>
               <button type="button" class="text-btn" id="btn-step">下一步手</button>
@@ -823,7 +841,7 @@ h1 {
     <script>
 (() => {
   /** Semver-style app version (major.minor). Bump minor on each ship: 1.1, 1.2, … */
-  const APP_VERSION = "1.0";
+  const APP_VERSION = "1.1";
 
   /**
    * Sticker colour IDs → CSS classes. Face arrays store these keys
@@ -1038,7 +1056,11 @@ h1 {
     cases: document.getElementById("cases"),
     algBlock: document.getElementById("alg-block"),
     algLabel: document.getElementById("alg-label"),
+    algLabel2: document.getElementById("alg-label-2"),
+    algSeqPrimary: document.getElementById("alg-seq-primary"),
+    algSeqSecondary: document.getElementById("alg-seq-secondary"),
     moves: document.getElementById("moves"),
+    moves2: document.getElementById("moves-2"),
     practiceMoves: document.getElementById("practice-moves"),
     practiceBtns: document.getElementById("practice-btns"),
     btnPrev: document.getElementById("btn-prev"),
@@ -1537,22 +1559,43 @@ h1 {
     renderCube();
   }
 
-  function renderMoves(tokens) {
-    els.moves.innerHTML = "";
+  function renderMoves(tokens, container) {
+    const root = container || els.moves;
+    if (!root) return;
+    root.innerHTML = "";
     tokens.forEach((token, i) => {
       const span = document.createElement("span");
       span.className = "move";
       span.textContent = token;
       span.dataset.index = String(i);
-      els.moves.appendChild(span);
+      root.appendChild(span);
     });
   }
 
+  /** Moves row that receives play / step highlights. */
+  let playMovesRoot = null;
+
   function paintMoveHighlight() {
-    [...els.moves.children].forEach((node, i) => {
-      node.classList.toggle("current", i === playCursor);
-      node.classList.toggle("done", playCursor > i);
+    [els.moves, els.moves2].forEach((root) => {
+      if (!root) return;
+      const active = root === playMovesRoot;
+      [...root.children].forEach((node, i) => {
+        node.classList.toggle("current", active && i === playCursor);
+        node.classList.toggle("done", active && playCursor > i);
+      });
     });
+  }
+
+  function selectPlayAlg(which) {
+    const useAlg2 = which === "alg2";
+    activeAlg = useAlg2 ? [...ALG2] : [...ALG1];
+    playMovesRoot = useAlg2 ? els.moves2 : els.moves;
+    els.algSeqPrimary?.classList.toggle("is-active", !useAlg2);
+    els.algSeqSecondary?.classList.toggle("is-active", useAlg2);
+    stopPlay();
+    playCursor = -1;
+    algFinished = false;
+    paintMoveHighlight();
   }
 
   function renderPracticeMoves() {
@@ -1595,7 +1638,12 @@ h1 {
 
     if (!step.showAlg) {
       els.algBlock.hidden = true;
+      if (els.algSeqSecondary) els.algSeqSecondary.hidden = true;
+      els.algSeqPrimary?.classList.remove("is-playable");
+      els.algSeqSecondary?.classList.remove("is-playable", "is-active");
+      els.algSeqPrimary?.classList.add("is-active");
       activeAlg = [];
+      playMovesRoot = null;
       els.btnPlay.disabled = true;
       els.btnStep.disabled = true;
       return;
@@ -1603,16 +1651,38 @@ h1 {
 
     els.algBlock.hidden = false;
     if (step.showAlg === "alg1") {
+      if (els.algSeqSecondary) els.algSeqSecondary.hidden = true;
+      els.algSeqPrimary?.classList.remove("is-playable");
+      els.algSeqSecondary?.classList.remove("is-playable", "is-active");
+      els.algSeqPrimary?.classList.add("is-active");
       activeAlg = [...ALG1];
+      playMovesRoot = els.moves;
       els.algLabel.textContent = "公式 1 · F R' F L2 F' R F L2 F2";
+      renderMoves(ALG1, els.moves);
     } else if (step.showAlg === "alg2") {
+      if (els.algSeqSecondary) els.algSeqSecondary.hidden = true;
+      els.algSeqPrimary?.classList.remove("is-playable");
+      els.algSeqSecondary?.classList.remove("is-playable", "is-active");
+      els.algSeqPrimary?.classList.add("is-active");
       activeAlg = [...ALG2];
+      playMovesRoot = els.moves;
       els.algLabel.textContent = "公式 2 · R' U' R U' R' U2 R";
+      renderMoves(ALG2, els.moves);
     } else {
+      // Notation page: show 公式 1 and 公式 2 together (no hide/switch).
+      if (els.algSeqSecondary) els.algSeqSecondary.hidden = false;
+      els.algSeqPrimary?.classList.add("is-playable", "is-active");
+      els.algSeqSecondary?.classList.add("is-playable");
+      els.algSeqSecondary?.classList.remove("is-active");
+      els.algLabel.textContent = "公式 1 · F R' F L2 F' R F L2 F2";
+      if (els.algLabel2) {
+        els.algLabel2.textContent = "公式 2 · R' U' R U' R' U2 R";
+      }
+      renderMoves(ALG1, els.moves);
+      renderMoves(ALG2, els.moves2);
       activeAlg = [...ALG1];
-      els.algLabel.textContent = "公式 1（點此切換公式 2）";
+      playMovesRoot = els.moves;
     }
-    renderMoves(activeAlg);
     paintMoveHighlight();
     els.btnPlay.disabled = false;
     els.btnStep.disabled = false;
@@ -1818,19 +1888,15 @@ h1 {
   els.algLabel.addEventListener("click", () => {
     const step = steps[stepIndex];
     if (step.showAlg !== "both" || animating) return;
-    if (activeAlg[0] === "F") {
-      activeAlg = [...ALG2];
-      els.algLabel.textContent = "公式 2（點此切換公式 1）";
-    } else {
-      activeAlg = [...ALG1];
-      els.algLabel.textContent = "公式 1（點此切換公式 2）";
-    }
-    stopPlay();
-    playCursor = -1;
-    algFinished = false;
-    renderMoves(activeAlg);
-    paintMoveHighlight();
+    selectPlayAlg("alg1");
   });
+  if (els.algLabel2) {
+    els.algLabel2.addEventListener("click", () => {
+      const step = steps[stepIndex];
+      if (step.showAlg !== "both" || animating) return;
+      selectPlayAlg("alg2");
+    });
+  }
 
   // Orbit the viewpoint by dragging on the cube area. Double-click resets.
   els.cubeOrbit.addEventListener("pointerdown", (event) => {
