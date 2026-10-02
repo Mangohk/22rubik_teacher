@@ -1,6 +1,6 @@
 (() => {
   /** Increment by 1 on every shipped update (shown on step 1, top-right). */
-  const APP_VERSION = 9;
+  const APP_VERSION = 10;
 
   /**
    * Sticker colour IDs → CSS classes. Face arrays store these keys
