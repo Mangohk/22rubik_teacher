@@ -720,7 +720,7 @@ h1 {
           <div class="rail-fill" id="rail-fill"></div>
         </div>
         <div class="mast-end">
-          <p class="app-version" id="app-version" hidden>v36</p>
+          <p class="app-version" id="app-version" hidden>v1.0</p>
           <p class="step-count" id="step-count">1 / 7</p>
         </div>
       </header>
@@ -822,8 +822,8 @@ h1 {
 
     <script>
 (() => {
-  /** Increment by 1 on every shipped update (shown on step 1, top-right). */
-  const APP_VERSION = 36;
+  /** Semver-style app version (major.minor). Bump minor on each ship: 1.1, 1.2, … */
+  const APP_VERSION = "1.0";
 
   /**
    * Sticker colour IDs → CSS classes. Face arrays store these keys
@@ -902,7 +902,7 @@ h1 {
     },
     "0": {
       hold: "0 黃 · 後排兩格都不要黃",
-      tip: `零格黃：對齊拿法，讓<strong>左面左上、右面右上</strong>那兩格都不是黃色（圖中高亮），再轉公式 2。`,
+      tip: `零格黃：對齊拿法，讓<strong>左面左上、右面右上</strong>那兩格都是黃色（圖中高亮），再轉公式 2。`,
       // L face upper-left (UBL) and R face upper-right (UBR) — both back-row sides
       focus: [
         { face: "L", x: -1, y: 1, z: -1 },
@@ -957,7 +957,7 @@ h1 {
     {
       id: "step2",
       title: "第二步：白色側面調好",
-      body: `看白層側面有無<strong>同色成對</strong>。放到<strong>左手邊</strong>，轉公式 1。若沒有成對，先轉一次公式 1。`,
+      body: `看白層側面有無<strong>同色成對</strong>。放到<strong>左手邊</strong>，轉公式 1。若沒有成對，先轉一次公式 1。就會找到成對，可以再轉一次公式 1。`,
       hold: "同色對 · 放左手邊",
       hint: "",
       showAlg: "alg1",
@@ -983,12 +983,12 @@ h1 {
     {
       id: "step4",
       title: "第四步：黃色側面調好",
-      body: `同第二步：黃層側面同色對放<strong>左手邊</strong>，轉公式 1。沒有成對就先轉一次。最後只轉上層對齊。`,
+      body: `看白層側面有無<strong>同色成對</strong>。放到<strong>左手邊</strong>，轉公式 1。若沒有成對，先轉一次公式 1。就會找到成對，可以再轉一次公式 1。`,
       hold: "同色對 · 左手邊 · 再對齊上層",
       hint: "L",
       showAlg: "alg1",
       cases: null,
-      preset: "solved",
+      preset: "alg1-u",
     },
     {
       id: "done",
@@ -1511,14 +1511,15 @@ h1 {
       }
     } else if (name === "after-alg1") {
       // 第二步 demo scramble (2×2: lowercase d/r = D/R).
-      // R U R' L D' L' R' d r d' r' d r
+      // Human: R U R' L D' L' R' d r d' r' d r
+      // Engine L sense is inverted vs that notation, so L↔L' when applying.
       [
         "R",
         "U",
         "R'",
-        "L",
-        "D'",
         "L'",
+        "D'",
+        "L",
         "R'",
         "D",
         "R",
@@ -1527,6 +1528,10 @@ h1 {
         "D",
         "R",
       ].forEach((token) => applyMove(token));
+    } else if (name === "alg1-u") {
+      // 第四步: solved → 公式 1 → U
+      ALG1.forEach((token) => applyMove(token));
+      applyMove("U");
     }
     resetCubieTransforms();
     renderCube();
@@ -1779,6 +1784,16 @@ h1 {
     playAlg();
   });
   els.btnStep.addEventListener("click", () => {
+    stopPlay();
+    stepOnce();
+  });
+  window.addEventListener("keydown", (event) => {
+    if (event.code !== "Space" && event.key !== " ") return;
+    if (event.repeat) return;
+    const tag = (event.target && event.target.tagName) || "";
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    if (els.btnStep.disabled) return;
+    event.preventDefault();
     stopPlay();
     stepOnce();
   });
