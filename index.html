@@ -741,7 +741,7 @@ h1 {
           <div class="rail-fill" id="rail-fill"></div>
         </div>
         <div class="mast-end">
-          <p class="app-version" id="app-version" hidden>v1.5</p>
+          <p class="app-version" id="app-version" hidden>v1.6</p>
           <p class="step-count" id="step-count">1 / 7</p>
         </div>
       </header>
@@ -860,7 +860,7 @@ h1 {
     <script>
 (() => {
   /** Semver-style app version (major.minor). Bump minor on each ship: 1.1, 1.2, … */
-  const APP_VERSION = "1.5";
+  const APP_VERSION = "1.6";
 
   /**
    * Sticker colour IDs → CSS classes. Face arrays store these keys
@@ -917,6 +917,57 @@ h1 {
     "U",
     "R",
   ];
+
+  /**
+   * Step 1 (white-corner) cases: insert white–green–red into UFR.
+   * Hold white up · green front. Put the piece at DFR, then pick the case
+   * matching which way the white sticker faces (or dump if stuck on U).
+   * Algs are matched to this app's R/D turn sense (same as practice buttons).
+   */
+  const WHITE_CORNER_CASES = {
+    side: {
+      hold: "白在右側 · 角塊在右下前",
+      tip: `白貼紙朝<strong>右面</strong>（圖中高亮）。轉下列手法，插入<strong>右上前</strong>，白面朝上。`,
+      focus: [{ face: "R", x: 1, y: -1, z: 1 }],
+      focusClass: "is-focus",
+      // Setup leaves white on R at DFR; R' D' R inserts (was wrongly same as setup).
+      alg: ["R'", "D'", "R"],
+      algLabel: "白在右側 · R' D' R",
+      setup: ["R'", "D", "R"],
+    },
+    front: {
+      hold: "白在前面 · 角塊在右下前",
+      tip: `白貼紙朝<strong>前面</strong>（圖中高亮）。轉下列手法，插入<strong>右上前</strong>，白面朝上。`,
+      focus: [{ face: "F", x: 1, y: -1, z: 1 }],
+      focusClass: "is-focus",
+      alg: ["D'", "R'", "D", "R"],
+      algLabel: "白在前面 · D' R' D R",
+      setup: ["R'", "D'", "R", "D"],
+    },
+    down: {
+      hold: "白在下面 · 角塊在右下前",
+      tip: `白貼紙朝<strong>下面</strong>（圖中高亮）。轉下列手法，插入<strong>右上前</strong>，白面朝上。`,
+      focus: [{ face: "D", x: 1, y: -1, z: 1 }],
+      focusClass: "is-focus",
+      // R' D R does not insert from this pose; D R2 places the white corner in UFR.
+      alg: ["D", "R2"],
+      algLabel: "白在下面 · D R2",
+      setup: ["R'", "D'", "R", "D", "R'", "D", "R", "D2"],
+    },
+    stuck: {
+      hold: "上層卡住 · 先把角塊轉到右上前",
+      tip: `目標角已在上層但位置／方向不對：用下列手法丟到下層（會變成「白在前面」），再選對應情況繼續。`,
+      focus: [
+        { face: "U", x: 1, y: 1, z: 1 },
+        { face: "F", x: 1, y: 1, z: 1 },
+        { face: "R", x: 1, y: 1, z: 1 },
+      ],
+      focusClass: "is-focus-avoid",
+      alg: ["R'", "D", "R"],
+      algLabel: "丟到下層 · R' D R",
+      setup: ["R'", "D'", "R", "D2", "F", "D'", "F'"],
+    },
+  };
 
   /**
    * Step 3 (yellow-work) case copy + which stickers to outline.
@@ -984,12 +1035,12 @@ h1 {
     {
       id: "step1",
       title: "第一步：一面轉好",
-      body: `把<strong>白色面</strong>四個角拼齊。這步偏直覺。完成時，四個白貼紙都朝上。`,
-      hold: "白面朝上",
+      body: `白面朝上。先轉到白層<strong>右下前不是白色</strong>，再依白貼紙朝向選情況；下層白角可先轉 D 對齊同一柱。完成時四個白貼紙都朝上。`,
+      hold: "白面朝上 · 綠面朝自己",
       hint: "U",
-      showAlg: null,
-      cases: null,
-      preset: "solved",
+      showAlg: "case",
+      cases: ["stuck", "down", "side", "front"],
+      preset: "white-corner",
     },
     {
       id: "step2",
@@ -1040,7 +1091,7 @@ h1 {
   ];
 
   let stepIndex = 0;
-  let caseId = "1";
+  let caseId = "stuck";
   let playing = false;
   let animating = false;
   let playCursor = -1;
@@ -1325,15 +1376,27 @@ h1 {
     });
   }
 
-  /** Active highlight targets for this step / yellow case (empty if none). */
+  /** Case config for the current step (yellow-work or white-corner), if any. */
+  function activeCaseConfig() {
+    const step = steps[stepIndex];
+    if (!step?.cases) return null;
+    if (step.preset === "yellow-work") {
+      return YELLOW_CASES[caseId] || YELLOW_CASES["1"];
+    }
+    if (step.preset === "white-corner") {
+      return WHITE_CORNER_CASES[caseId] || WHITE_CORNER_CASES.stuck;
+    }
+    return null;
+  }
+
+  /** Active highlight targets for this step / case (empty if none). */
   function currentFocusTargets() {
     if (!focusEnabled) return { targets: [], focusClass: "is-focus" };
     const step = steps[stepIndex];
     if (!step) return { targets: [], focusClass: "is-focus" };
-    if (step.preset === "yellow-work") {
-      const cfg = YELLOW_CASES[caseId];
-      if (!cfg) return { targets: [], focusClass: "is-focus" };
-      return { targets: cfg.focus, focusClass: cfg.focusClass };
+    const cfg = activeCaseConfig();
+    if (cfg?.focus?.length) {
+      return { targets: cfg.focus, focusClass: cfg.focusClass || "is-focus" };
     }
     if (step.focus && step.focus.length) {
       return {
@@ -1390,7 +1453,7 @@ h1 {
     });
   }
 
-  function applyYellowCaseCopy() {
+  function applyCaseCopy() {
     const step = steps[stepIndex];
     if (!step) return;
     if (!step.cases) {
@@ -1398,7 +1461,12 @@ h1 {
       els.stepBody.innerHTML = step.body;
       return;
     }
-    const cfg = YELLOW_CASES[caseId] || YELLOW_CASES["1"];
+    const cfg = activeCaseConfig();
+    if (!cfg) {
+      els.hold.textContent = step.hold;
+      els.stepBody.innerHTML = step.body;
+      return;
+    }
     els.hold.textContent = cfg.hold;
     els.stepBody.innerHTML = `${step.body}<span class="case-tip"> ${cfg.tip}</span>`;
   }
@@ -1606,6 +1674,9 @@ h1 {
         ALG2_INV.forEach((token) => applyMove(token));
         ALG2_INV.forEach((token) => applyMove(token));
       }
+    } else if (name === "white-corner") {
+      const cfg = WHITE_CORNER_CASES[caseId] || WHITE_CORNER_CASES.stuck;
+      (cfg.setup || []).forEach((token) => applyMove(token));
     } else if (name === "after-alg1") {
       // 第二步 demo scramble (2×2: lowercase d/r = D/R).
       // Human: R U R' L D' L' R' d r d' r' d r
@@ -1747,6 +1818,17 @@ h1 {
       playMovesRoot = els.moves;
       els.algLabel.textContent = "公式 2 · R' U' R U' R' U2 R";
       renderMoves(ALG2, els.moves);
+    } else if (step.showAlg === "case") {
+      if (els.algSeqSecondary) els.algSeqSecondary.hidden = true;
+      els.algSeqPrimary?.classList.remove("is-playable");
+      els.algSeqSecondary?.classList.remove("is-playable", "is-active");
+      els.algSeqPrimary?.classList.add("is-active");
+      const cfg = activeCaseConfig();
+      const tokens = cfg?.alg ? [...cfg.alg] : [];
+      activeAlg = tokens;
+      playMovesRoot = els.moves;
+      els.algLabel.textContent = cfg?.algLabel || "手法";
+      renderMoves(tokens, els.moves);
     } else {
       // Notation page: show 公式 1 and 公式 2 together (no hide/switch).
       if (els.algSeqSecondary) els.algSeqSecondary.hidden = false;
@@ -1776,17 +1858,28 @@ h1 {
       return;
     }
     els.cases.hidden = false;
-    const labels = { "1": "1 黃", "2": "2 黃", "0": "0 黃" };
+    const labels = {
+      "1": "1 黃",
+      "2": "2 黃",
+      "0": "0 黃",
+      stuck: "上層卡住",
+      side: "白在右側",
+      front: "白在前面",
+      down: "白在下面",
+    };
+    if (!step.cases.includes(caseId)) {
+      caseId = step.cases[0];
+    }
     step.cases.forEach((id) => {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.textContent = labels[id];
+      btn.textContent = labels[id] || id;
       btn.classList.toggle("active", caseId === id);
       btn.addEventListener("click", () => {
         caseId = id;
         enableStepFocus();
         renderCases();
-        applyYellowCaseCopy();
+        applyCaseCopy();
         setPreset(step.preset);
         loadAlgForStep();
         resetCubeView(true);
@@ -1834,6 +1927,9 @@ h1 {
 
   function renderStep() {
     const step = steps[stepIndex];
+    if (step.cases?.length && !step.cases.includes(caseId)) {
+      caseId = step.cases[0];
+    }
     enableStepFocus();
     els.stepTitle.textContent = step.title;
     els.cubeOrbit.dataset.hint = step.hint || "";
@@ -1841,7 +1937,7 @@ h1 {
       stepIndex === steps.length - 1 ? "完成" : "下一步";
     renderProgress();
     renderCases();
-    applyYellowCaseCopy();
+    applyCaseCopy();
     setPreset(step.preset);
     loadAlgForStep();
     resetCubeView(false);
