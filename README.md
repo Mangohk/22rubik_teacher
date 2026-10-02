@@ -7,11 +7,15 @@ https://mangohk.github.io/22rubik_teacher/
 
 The homepage is a step-by-step 2×2 guide (David Guo beginner method). Original UI with animated step transitions and cube hints.
 
+## Structure
+
+Single-file site: all CSS and JS live in `index.html` (self-contained for GitHub Pages from repo root).
+
 ## Version
 
-**v10**
+**v11**
 
-Matches `APP_VERSION` in `assets/solve.js`. The in-app badge on step 1 (top-right) shows the same number — bump both together when shipping.
+Matches `APP_VERSION` in the inlined script inside `index.html`. The in-app badge on step 1 (top-right) shows the same number — bump both together when shipping.
 
 ## GitHub Pages
 
