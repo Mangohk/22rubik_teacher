@@ -741,7 +741,7 @@ h1 {
           <div class="rail-fill" id="rail-fill"></div>
         </div>
         <div class="mast-end">
-          <p class="app-version" id="app-version" hidden>v1.6</p>
+          <p class="app-version" id="app-version" hidden>v1.7</p>
           <p class="step-count" id="step-count">1 / 7</p>
         </div>
       </header>
@@ -860,7 +860,7 @@ h1 {
     <script>
 (() => {
   /** Semver-style app version (major.minor). Bump minor on each ship: 1.1, 1.2, … */
-  const APP_VERSION = "1.6";
+  const APP_VERSION = "1.7";
 
   /**
    * Sticker colour IDs → CSS classes. Face arrays store these keys
@@ -927,31 +927,32 @@ h1 {
   const WHITE_CORNER_CASES = {
     side: {
       hold: "白在右側 · 角塊在右下前",
-      tip: `白貼紙朝<strong>右面</strong>（圖中高亮）。轉下列手法，插入<strong>右上前</strong>，白面朝上。`,
+      tip: `白貼紙朝<strong>右面</strong>（圖中高亮）。用核心手法的 D' 變體 <strong>R' D' R</strong>，插入<strong>右上前</strong>，白面朝上。`,
       focus: [{ face: "R", x: 1, y: -1, z: 1 }],
       focusClass: "is-focus",
-      // Setup leaves white on R at DFR; R' D' R inserts (was wrongly same as setup).
+      // Setup leaves white on R at DFR; insert is R' D' R (D' variant of core R' D R).
       alg: ["R'", "D'", "R"],
       algLabel: "白在右側 · R' D' R",
       setup: ["R'", "D", "R"],
     },
     front: {
       hold: "白在前面 · 角塊在右下前",
-      tip: `白貼紙朝<strong>前面</strong>（圖中高亮）。轉下列手法，插入<strong>右上前</strong>，白面朝上。`,
+      tip: `白貼紙朝<strong>前面</strong>（圖中高亮）。先 <strong>D'</strong> 對齊，再做核心手法 <strong>R' D R</strong>，插入<strong>右上前</strong>。`,
       focus: [{ face: "F", x: 1, y: -1, z: 1 }],
       focusClass: "is-focus",
+      // D' then core R' D R.
       alg: ["D'", "R'", "D", "R"],
-      algLabel: "白在前面 · D' R' D R",
+      algLabel: "白在前面 · D' → R' D R",
       setup: ["R'", "D'", "R", "D"],
     },
     down: {
       hold: "白在下面 · 角塊在右下前",
-      tip: `白貼紙朝<strong>下面</strong>（圖中高亮）。轉下列手法，插入<strong>右上前</strong>，白面朝上。`,
+      tip: `白貼紙朝<strong>下面</strong>（圖中高亮）。先做核心手法 <strong>R' D R</strong>，再 <strong>D2</strong>，接著用右側手法 <strong>R' D' R</strong> 插入<strong>右上前</strong>。`,
       focus: [{ face: "D", x: 1, y: -1, z: 1 }],
       focusClass: "is-focus",
-      // R' D R does not insert from this pose; D R2 places the white corner in UFR.
-      alg: ["D", "R2"],
-      algLabel: "白在下面 · D R2",
+      // White-down: core R'DR, then D2 + side insert (same R'DR family; not D R2).
+      alg: ["R'", "D", "R", "D2", "R'", "D'", "R"],
+      algLabel: "白在下面 · R' D R → D2 → R' D' R",
       setup: ["R'", "D'", "R", "D", "R'", "D", "R", "D2"],
     },
     stuck: {

@@ -13,7 +13,7 @@ Single-file site: all CSS and JS live in `index.html` (self-contained for GitHub
 
 ## Version
 
-**1.6**
+**1.7**
 
 Matches `APP_VERSION` in the inlined script inside `index.html`. The in-app badge on step 1 (top-right) shows `v` + the same value — bump both together when shipping.
 
