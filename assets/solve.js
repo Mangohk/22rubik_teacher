@@ -1,6 +1,6 @@
 (() => {
   /** Increment by 1 on every shipped update (shown on step 1, top-right). */
-  const APP_VERSION = 6;
+  const APP_VERSION = 7;
 
   /**
    * Sticker colour IDs → CSS classes. Face arrays store these keys
@@ -164,6 +164,8 @@
     algBlock: document.getElementById("alg-block"),
     algLabel: document.getElementById("alg-label"),
     moves: document.getElementById("moves"),
+    practiceMoves: document.getElementById("practice-moves"),
+    practiceBtns: document.getElementById("practice-btns"),
     btnPrev: document.getElementById("btn-prev"),
     btnNext: document.getElementById("btn-next"),
     btnPlay: document.getElementById("btn-play"),
@@ -608,10 +610,42 @@
     });
   }
 
+  function renderPracticeMoves() {
+    const step = steps[stepIndex];
+    const show = step.id === "notation";
+    if (!els.practiceMoves) return;
+    els.practiceMoves.hidden = !show;
+    setPracticeBusy(animating || playing);
+  }
+
+  function setPracticeBusy(busy) {
+    if (!els.practiceBtns) return;
+    [...els.practiceBtns.querySelectorAll("button")].forEach((btn) => {
+      btn.disabled = busy;
+    });
+  }
+
+  async function practiceMove(token) {
+    if (animating || playing) return;
+    const step = steps[stepIndex];
+    if (!step || step.id !== "notation") return;
+    animating = true;
+    setControlsBusy(true);
+    setPracticeBusy(true);
+    try {
+      await animateToken(token);
+    } finally {
+      animating = false;
+      setControlsBusy(false);
+      setPracticeBusy(false);
+    }
+  }
+
   function loadAlgForStep() {
     const step = steps[stepIndex];
     stopPlay();
     playCursor = -1;
+    renderPracticeMoves();
 
     if (!step.showAlg) {
       els.algBlock.hidden = true;
@@ -685,6 +719,7 @@
     els.btnReset.disabled = busy;
     els.btnPrev.disabled = busy || stepIndex === 0;
     els.btnNext.disabled = busy || stepIndex === steps.length - 1;
+    setPracticeBusy(busy);
   }
 
   function renderStep() {
@@ -794,6 +829,13 @@
     paintMoveHighlight();
     setControlsBusy(false);
   });
+  if (els.practiceBtns) {
+    els.practiceBtns.addEventListener("click", (event) => {
+      const btn = event.target.closest("button[data-move]");
+      if (!btn || btn.disabled) return;
+      practiceMove(btn.dataset.move);
+    });
+  }
 
   els.algLabel.addEventListener("click", () => {
     const step = steps[stepIndex];
