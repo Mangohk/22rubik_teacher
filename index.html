@@ -405,6 +405,10 @@ h1 {
   margin-top: 0.85rem;
 }
 
+.alg-seq .alg-actions {
+  margin-top: 0.65rem;
+}
+
 .text-btn {
   appearance: none;
   border: 0;
@@ -732,7 +736,7 @@ h1 {
           <div class="rail-fill" id="rail-fill"></div>
         </div>
         <div class="mast-end">
-          <p class="app-version" id="app-version" hidden>v1.1</p>
+          <p class="app-version" id="app-version" hidden>v1.2</p>
           <p class="step-count" id="step-count">1 / 7</p>
         </div>
       </header>
@@ -766,12 +770,22 @@ h1 {
             <div class="alg-seq is-active" id="alg-seq-primary">
               <p class="alg-name" id="alg-label"></p>
               <div class="moves" id="moves" aria-live="polite"></div>
+              <div class="alg-actions" id="alg-actions-1" hidden>
+                <button type="button" class="text-btn" data-play-alg="alg1">播放</button>
+                <button type="button" class="text-btn" data-step-alg="alg1">下一步手</button>
+                <button type="button" class="text-btn quiet" data-reset-alg="alg1">重設</button>
+              </div>
             </div>
             <div class="alg-seq" id="alg-seq-secondary" hidden>
               <p class="alg-name" id="alg-label-2"></p>
               <div class="moves" id="moves-2" aria-live="polite"></div>
+              <div class="alg-actions" id="alg-actions-2" hidden>
+                <button type="button" class="text-btn" data-play-alg="alg2">播放</button>
+                <button type="button" class="text-btn" data-step-alg="alg2">下一步手</button>
+                <button type="button" class="text-btn quiet" data-reset-alg="alg2">重設</button>
+              </div>
             </div>
-            <div class="alg-actions">
+            <div class="alg-actions" id="alg-actions-shared">
               <button type="button" class="text-btn" id="btn-play">播放</button>
               <button type="button" class="text-btn" id="btn-step">下一步手</button>
               <button type="button" class="text-btn quiet" id="btn-reset">重設</button>
@@ -841,7 +855,7 @@ h1 {
     <script>
 (() => {
   /** Semver-style app version (major.minor). Bump minor on each ship: 1.1, 1.2, … */
-  const APP_VERSION = "1.1";
+  const APP_VERSION = "1.2";
 
   /**
    * Sticker colour IDs → CSS classes. Face arrays store these keys
@@ -1065,6 +1079,9 @@ h1 {
     practiceBtns: document.getElementById("practice-btns"),
     btnPrev: document.getElementById("btn-prev"),
     btnNext: document.getElementById("btn-next"),
+    algActionsShared: document.getElementById("alg-actions-shared"),
+    algActions1: document.getElementById("alg-actions-1"),
+    algActions2: document.getElementById("alg-actions-2"),
     btnPlay: document.getElementById("btn-play"),
     btnStep: document.getElementById("btn-step"),
     btnReset: document.getElementById("btn-reset"),
@@ -1507,7 +1524,60 @@ h1 {
 
   function stopPlay() {
     playing = false;
-    els.btnPlay.textContent = "播放";
+    syncPlayButtonLabels(false);
+  }
+
+  let activePlayAlgId = "alg1";
+
+  function isBothAlgStep() {
+    return steps[stepIndex]?.showAlg === "both";
+  }
+
+  function allAlgControlButtons() {
+    const list = [els.btnPlay, els.btnStep, els.btnReset];
+    [els.algActions1, els.algActions2].forEach((block) => {
+      if (block) list.push(...block.querySelectorAll("button"));
+    });
+    return list.filter(Boolean);
+  }
+
+  function playButtons() {
+    const btns = [];
+    if (els.btnPlay) btns.push(els.btnPlay);
+    [els.algActions1, els.algActions2].forEach((block) => {
+      if (!block) return;
+      block.querySelectorAll("[data-play-alg]").forEach((b) => btns.push(b));
+    });
+    return btns;
+  }
+
+  function syncPlayButtonLabels(playingNow) {
+    playButtons().forEach((btn) => {
+      btn.textContent = playingNow ? "暫停" : "播放";
+    });
+  }
+
+  function setAlgActionsLayout(showDual) {
+    if (els.algActionsShared) els.algActionsShared.hidden = showDual;
+    if (els.algActions1) els.algActions1.hidden = !showDual;
+    if (els.algActions2) els.algActions2.hidden = !showDual;
+  }
+
+  function withPlayAlg(which, fn) {
+    if (animating) return;
+    if (isBothAlgStep()) selectPlayAlg(which);
+    fn();
+  }
+
+  function resetAlgPlayback() {
+    if (animating) return;
+    stopPlay();
+    playCursor = -1;
+    algFinished = false;
+    enableStepFocus();
+    setPreset(steps[stepIndex].preset);
+    paintMoveHighlight();
+    setControlsBusy(false);
   }
 
   /**
@@ -1587,6 +1657,7 @@ h1 {
   }
 
   function selectPlayAlg(which) {
+    activePlayAlgId = which;
     const useAlg2 = which === "alg2";
     activeAlg = useAlg2 ? [...ALG2] : [...ALG1];
     playMovesRoot = useAlg2 ? els.moves2 : els.moves;
@@ -1638,6 +1709,7 @@ h1 {
 
     if (!step.showAlg) {
       els.algBlock.hidden = true;
+      setAlgActionsLayout(false);
       if (els.algSeqSecondary) els.algSeqSecondary.hidden = true;
       els.algSeqPrimary?.classList.remove("is-playable");
       els.algSeqSecondary?.classList.remove("is-playable", "is-active");
@@ -1650,6 +1722,7 @@ h1 {
     }
 
     els.algBlock.hidden = false;
+    setAlgActionsLayout(step.showAlg === "both");
     if (step.showAlg === "alg1") {
       if (els.algSeqSecondary) els.algSeqSecondary.hidden = true;
       els.algSeqPrimary?.classList.remove("is-playable");
@@ -1680,6 +1753,7 @@ h1 {
       }
       renderMoves(ALG1, els.moves);
       renderMoves(ALG2, els.moves2);
+      activePlayAlgId = "alg1";
       activeAlg = [...ALG1];
       playMovesRoot = els.moves;
     }
@@ -1732,12 +1806,24 @@ h1 {
   }
 
   function setControlsBusy(busy) {
-    els.btnStep.disabled = busy || !activeAlg.length;
-    els.btnPlay.disabled = busy || !activeAlg.length;
-    els.btnReset.disabled = busy;
+    const noAlg = !activeAlg.length;
+    allAlgControlButtons().forEach((btn) => {
+      const isReset =
+        btn === els.btnReset || btn.dataset?.resetAlg !== undefined;
+      btn.disabled = isReset ? busy : busy || noAlg;
+    });
     els.btnPrev.disabled = busy || stepIndex === 0;
     els.btnNext.disabled = busy || stepIndex === steps.length - 1;
     setPracticeBusy(busy);
+  }
+
+  function canStepAlg() {
+    if (isBothAlgStep()) {
+      return [...(els.algActions1?.querySelectorAll("[data-step-alg]") || [])].some(
+        (b) => !b.disabled
+      );
+    }
+    return els.btnStep && !els.btnStep.disabled;
   }
 
   function renderStep() {
@@ -1816,9 +1902,9 @@ h1 {
     }
 
     playing = true;
-    els.btnPlay.textContent = "暫停";
+    syncPlayButtonLabels(true);
     setControlsBusy(true);
-    els.btnPlay.disabled = false;
+    if (els.btnPlay) els.btnPlay.disabled = false;
 
     while (playing && playCursor < activeAlg.length - 1) {
       await stepOnce();
@@ -1862,20 +1948,31 @@ h1 {
     if (event.repeat) return;
     const tag = (event.target && event.target.tagName) || "";
     if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-    if (els.btnStep.disabled) return;
+    if (!canStepAlg()) return;
     event.preventDefault();
     stopPlay();
+    if (isBothAlgStep()) selectPlayAlg(activePlayAlgId);
     stepOnce();
   });
-  els.btnReset.addEventListener("click", () => {
-    if (animating) return;
-    stopPlay();
-    playCursor = -1;
-    algFinished = false;
-    enableStepFocus();
-    setPreset(steps[stepIndex].preset);
-    paintMoveHighlight();
-    setControlsBusy(false);
+  els.btnReset.addEventListener("click", () => resetAlgPlayback());
+  [els.algActions1, els.algActions2].forEach((block) => {
+    if (!block) return;
+    block.querySelector("[data-play-alg]")?.addEventListener("click", () => {
+      withPlayAlg(block.querySelector("[data-play-alg]").dataset.playAlg, () =>
+        playAlg()
+      );
+    });
+    block.querySelector("[data-step-alg]")?.addEventListener("click", () => {
+      withPlayAlg(block.querySelector("[data-step-alg]").dataset.stepAlg, () => {
+        stopPlay();
+        stepOnce();
+      });
+    });
+    block.querySelector("[data-reset-alg]")?.addEventListener("click", () => {
+      withPlayAlg(block.querySelector("[data-reset-alg]").dataset.resetAlg, () =>
+        resetAlgPlayback()
+      );
+    });
   });
   if (els.practiceBtns) {
     els.practiceBtns.addEventListener("click", (event) => {

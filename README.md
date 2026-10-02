@@ -13,11 +13,11 @@ Single-file site: all CSS and JS live in `index.html` (self-contained for GitHub
 
 ## Version
 
-**1.1**
+**1.2**
 
 Matches `APP_VERSION` in the inlined script inside `index.html`. The in-app badge on step 1 (top-right) shows `v` + the same value — bump both together when shipping.
 
-From 1.0 onward, ship bumps only the **minor** segment (`1.1`, `1.2`, …).
+From 1.0 onward, ship bumps only the **minor** segment (`1.1`, `1.2`, …). **Every software change** must bump minor in `APP_VERSION`, the `#app-version` badge text, and this README section together.
 
 ## GitHub Pages
 
