@@ -1,6 +1,6 @@
 (() => {
   /** Increment by 1 on every shipped update (shown on step 1, top-right). */
-  const APP_VERSION = 5;
+  const APP_VERSION = 6;
 
   /**
    * Sticker colour IDs → CSS classes. Face arrays store these keys
@@ -29,6 +29,35 @@
 
   const ALG1 = ["F", "R'", "F", "L2", "F'", "R", "F", "L2", "F2"];
   const ALG2 = ["R'", "U'", "R", "U'", "R'", "U2", "R"];
+
+  /**
+   * Step 3 (yellow-work) case copy + which stickers to outline.
+   * Coords match CUBIES; face is the sticker face on that cubie.
+   * David Guo: 1黃 left-top on U; 2黃 top-left yellow faces back; 0黃 top view as shown.
+   */
+  const YELLOW_CASES = {
+    "1": {
+      hold: "1 黃 · 上面左上角必須是黃",
+      tip: `只有一格黃：把那格黃放到<strong>上面左上角</strong>（圖中高亮），再轉公式 2（通常兩次）。`,
+      focus: [{ face: "U", x: -1, y: 1, z: -1 }],
+      focusClass: "is-focus",
+    },
+    "2": {
+      hold: "2 黃 · 左上角背後必須是黃",
+      tip: `兩格黃：拿法要讓<strong>左上角那塊的黃色朝背後</strong>（圖中高亮背面），再轉公式 2，會變成「1 黃」。`,
+      focus: [{ face: "B", x: -1, y: 1, z: -1 }],
+      focusClass: "is-focus",
+    },
+    "0": {
+      hold: "0 黃 · 後排兩格都不要黃",
+      tip: `零格黃：對齊拿法，讓<strong>上面後排兩格（左上、右上）都不是黃色</strong>（圖中高亮），再轉公式 2。`,
+      focus: [
+        { face: "U", x: -1, y: 1, z: -1 },
+        { face: "U", x: 1, y: 1, z: -1 },
+      ],
+      focusClass: "is-focus-avoid",
+    },
+  };
 
   const CUBIES = [
     { x: -1, y: 1, z: -1 },
@@ -355,7 +384,47 @@
       }
       sticker.hidden = false;
       sticker.className = `sticker face-${face.toLowerCase()} ${COLORS[color]}`;
+      sticker.classList.remove("is-focus", "is-focus-avoid");
     });
+  }
+
+  function clearStickerFocus() {
+    cubieNodes.forEach((node) => {
+      node.querySelectorAll(".sticker").forEach((s) => {
+        s.classList.remove("is-focus", "is-focus-avoid");
+      });
+    });
+  }
+
+  /** Outline the U/B stickers that the active yellow-work case cares about. */
+  function applyYellowCaseHighlights() {
+    clearStickerFocus();
+    els.cubeOrbit.classList.remove("case-yaw-back");
+    const step = steps[stepIndex];
+    if (!step || step.preset !== "yellow-work") return;
+    const cfg = YELLOW_CASES[caseId];
+    if (!cfg) return;
+    // 2 黃：yaw so the back sticker behind top-left is visible
+    if (caseId === "2") els.cubeOrbit.classList.add("case-yaw-back");
+    cfg.focus.forEach(({ face, x, y, z }) => {
+      const i = CUBIES.findIndex((c) => c.x === x && c.y === y && c.z === z);
+      if (i < 0) return;
+      const sticker = cubieNodes[i]?.querySelector(`[data-face="${face}"]`);
+      if (sticker && !sticker.hidden) sticker.classList.add(cfg.focusClass);
+    });
+  }
+
+  function applyYellowCaseCopy() {
+    const step = steps[stepIndex];
+    if (!step) return;
+    if (step.preset !== "yellow-work") {
+      els.hold.textContent = step.hold;
+      els.stepBody.innerHTML = step.body;
+      return;
+    }
+    const cfg = YELLOW_CASES[caseId] || YELLOW_CASES["1"];
+    els.hold.textContent = cfg.hold;
+    els.stepBody.innerHTML = `${step.body}<span class="case-tip"> ${cfg.tip}</span>`;
   }
 
   function resetCubieTransforms() {
@@ -373,6 +442,7 @@
       paintCubie(node, x, y, z);
       node.style.transform = cubieTranslate(x, y, z);
     });
+    applyYellowCaseHighlights();
   }
 
   function layerPredicate(face) {
@@ -496,11 +566,13 @@
         faces.U[3] = "green";
         faces.F[1] = "white";
       } else if (caseId === "2") {
-        faces.U[1] = "red";
-        faces.R[0] = "white";
+        // 2 黃 (David Guo)：左上角黃色朝背後 — UBL's B sticker yellow; two yellows remain on U
+        faces.U[0] = "blue";
+        faces.B[1] = "yellow";
         faces.U[3] = "green";
         faces.F[1] = "white";
       } else if (caseId === "0") {
+        // 0 黃：no yellow on U; back row U[0]+U[1] must not be yellow (all four clear)
         faces.U[0] = "blue";
         faces.B[1] = "white";
         faces.U[1] = "red";
@@ -583,6 +655,7 @@
       btn.addEventListener("click", () => {
         caseId = id;
         renderCases();
+        applyYellowCaseCopy();
         setPreset(step.preset);
         loadAlgForStep();
       });
@@ -617,13 +690,12 @@
   function renderStep() {
     const step = steps[stepIndex];
     els.stepTitle.textContent = step.title;
-    els.stepBody.innerHTML = step.body;
-    els.hold.textContent = step.hold;
     els.cubeOrbit.dataset.hint = step.hint || "";
     els.btnNext.textContent =
       stepIndex === steps.length - 1 ? "完成" : "下一步";
     renderProgress();
     renderCases();
+    applyYellowCaseCopy();
     setPreset(step.preset);
     loadAlgForStep();
     setControlsBusy(false);
