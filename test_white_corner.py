@@ -154,12 +154,16 @@ def parse_cases(html: str) -> dict:
         alg = re.search(r"alg:\s*(\[[^\]]*\])", chunk)
         setup = re.search(r"setup:\s*(\[[^\]]*\])", chunk)
         label = re.search(r'algLabel:\s*"([^"]*)"', chunk)
+        view = re.search(r"view:\s*\{\s*x:\s*(-?\d+)\s*,\s*y:\s*(-?\d+)\s*\}", chunk)
         if not alg or not setup or not label:
             raise SystemExit(f"incomplete {name}")
         cases[name] = {
             "alg": eval(alg.group(1), {"__builtins__": {}}),
             "setup": eval(setup.group(1), {"__builtins__": {}}),
             "algLabel": label.group(1),
+            "view": (
+                {"x": int(view.group(1)), "y": int(view.group(2))} if view else None
+            ),
         }
     return cases
 
@@ -199,6 +203,13 @@ def main():
         "T2 side setup ≠ alg",
         cases["side"]["setup"] != cases["side"]["alg"],
         f"setup={cases['side']['setup']} alg={cases['side']['alg']}",
+    )
+    # CSS rotateY(+): L toward camera — side U+R vantage needs negative yaw.
+    sv = cases["side"].get("view") or {}
+    ok(
+        "T2 side view yaws toward R (negative Y)",
+        isinstance(sv.get("y"), int) and sv["y"] <= -60 and sv.get("x", 0) <= -20,
+        str(sv),
     )
 
     # T3 front
