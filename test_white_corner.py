@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Facelet tests for WHITE_CORNER_CASES in index.html (v1.8)."""
+"""Facelet tests for WHITE_CORNER_CASES / step presets in index.html (v1.9)."""
 from __future__ import annotations
 
+import ast
 import re
 import sys
 from pathlib import Path
@@ -234,6 +235,27 @@ def main():
         "T5 stuck core alg is R'DR",
         cases["stuck"]["alg"] == ["R'", "D", "R"],
         str(cases["stuck"]["alg"]),
+    )
+
+    # T6 step2 after-alg1: four whites on U (白面已完成)
+    alg1_m = re.search(
+        r'const ALG1 = (\[.*?\]);',
+        html,
+        re.S,
+    )
+    alg1 = ast.literal_eval(alg1_m.group(1)) if alg1_m else []
+    c = Cube()
+    c.apply_seq(alg1)
+    c.apply("U")
+    ok(
+        "T6 step2 after-alg1 has 4 whites on U",
+        c.faces["U"].count("white") == 4,
+        str(c.faces["U"]),
+    )
+    ok(
+        "T6 step2 after-alg1 left side is a pair",
+        c.faces["L"][0] == c.faces["L"][1],
+        str(c.faces["L"][:2]),
     )
 
     failed = sum(1 for _, p, _ in results if not p)
