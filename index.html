@@ -741,7 +741,7 @@ h1 {
           <div class="rail-fill" id="rail-fill"></div>
         </div>
         <div class="mast-end">
-          <p class="app-version" id="app-version" hidden>v1.11</p>
+          <p class="app-version" id="app-version" hidden>v1.12</p>
           <p class="step-count" id="step-count">1 / 7</p>
         </div>
       </header>
@@ -859,7 +859,7 @@ h1 {
     <script>
 (() => {
   /** Semver-style app version (major.minor). Bump minor on each ship: 1.1, 1.2, … */
-  const APP_VERSION = "1.11";
+  const APP_VERSION = "1.12";
 
   /**
    * Sticker colour IDs → CSS classes. Face arrays store these keys
@@ -929,8 +929,9 @@ h1 {
       tip: `白貼紙朝<strong>右面</strong>（圖中高亮）。用核心手法的 D' 變體 <strong>R' D' R</strong>，插入<strong>右上前</strong>，白面朝上。`,
       focus: [{ face: "R", x: 1, y: -1, z: 1 }],
       focusClass: "is-focus",
-      // Yaw toward R / ease pitch so right-face white (DFR) and U whites show together.
-      view: { x: -24, y: 72 },
+      // CSS rotateY(+): L toward camera — yaw negative to face R.
+      // Strong U+R: R white @DFR nearly face-on with U whites.
+      view: { x: -30, y: -75 },
       // Setup leaves white on R at DFR; insert is R' D' R (D' variant of core R' D R).
       alg: ["R'", "D'", "R"],
       algLabel: "白在右側 · R' D' R",
