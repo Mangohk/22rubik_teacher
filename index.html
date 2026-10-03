@@ -741,7 +741,7 @@ h1 {
           <div class="rail-fill" id="rail-fill"></div>
         </div>
         <div class="mast-end">
-          <p class="app-version" id="app-version" hidden>v1.7</p>
+          <p class="app-version" id="app-version" hidden>v1.8</p>
           <p class="step-count" id="step-count">1 / 7</p>
         </div>
       </header>
@@ -765,9 +765,8 @@ h1 {
               <button type="button" data-move="U'">U'</button>
               <button type="button" data-move="D">D</button>
               <button type="button" data-move="D'">D'</button>
-              <!-- L/L' labels swapped vs tokens so UI direction matches animation -->
-              <button type="button" data-move="L'">L</button>
-              <button type="button" data-move="L">L'</button>
+              <button type="button" data-move="L">L</button>
+              <button type="button" data-move="L'">L'</button>
             </div>
           </div>
 
@@ -802,8 +801,8 @@ h1 {
           <div class="cube-orbit" id="cube-orbit" data-hint="">
             <div class="cube-rig" id="cube-rig">
               <div class="cube" id="cube" aria-hidden="true"></div>
-              <div class="face-arrow" title="Facing green face" aria-hidden="true">
-                <p class="facing-label">Facing</p>
+              <div class="face-arrow" title="綠面朝自己" aria-hidden="true">
+                <p class="facing-label">朝自己</p>
                 <svg viewBox="0 0 112 220">
                   <path
                     d="M56 24 L56 156"
@@ -860,7 +859,7 @@ h1 {
     <script>
 (() => {
   /** Semver-style app version (major.minor). Bump minor on each ship: 1.1, 1.2, … */
-  const APP_VERSION = "1.7";
+  const APP_VERSION = "1.8";
 
   /**
    * Sticker colour IDs → CSS classes. Face arrays store these keys
@@ -1072,12 +1071,18 @@ h1 {
     {
       id: "step4",
       title: "第四步：黃色側面調好",
-      body: `看白層側面有無<strong>同色成對</strong>。放到<strong>左手邊</strong>，轉公式 1。若沒有成對，先轉一次公式 1。就會找到成對，可以再轉一次公式 1。`,
+      body: `看<strong>黃層側面</strong>有無<strong>同色成對</strong>。放到<strong>左手邊</strong>，轉公式 1。若沒有成對，先轉一次公式 1。就會找到成對，可以再轉一次公式 1。最後<strong>只轉上層</strong>，將側面顏色對齊即可。`,
       hold: "同色對 · 左手邊 · 再對齊上層",
       hint: "L",
       showAlg: "alg1",
       cases: null,
       preset: "alg1-u",
+      // Mirror step 2: left-face upper two stickers (UBL + UFL) on the yellow layer
+      focus: [
+        { face: "L", x: -1, y: 1, z: -1 },
+        { face: "L", x: -1, y: 1, z: 1 },
+      ],
+      focusClass: "is-focus",
     },
     {
       id: "done",
@@ -1250,7 +1255,9 @@ h1 {
   }
 
   function moveL(times = 1) {
-    faces.L = rotateFaceCCW(faces.L, times);
+    // Inverted vs prior sense so token L matches the user-facing direction
+    // (same role as the old label↔token swap). L / L' / L2 stay mutual inverses.
+    faces.L = rotateFaceCW(faces.L, times);
     for (let n = 0; n < times; n += 1) {
       const u0 = faces.U[0];
       const u2 = faces.U[2];
@@ -1261,14 +1268,14 @@ h1 {
       const b1 = faces.B[1];
       const b3 = faces.B[3];
       // Left-layer sides only: DFL/DBL (D0/D2), not DFR/DBR.
-      faces.U[0] = f0;
-      faces.U[2] = f2;
-      faces.F[0] = d0;
-      faces.F[2] = d2;
-      faces.D[0] = b3;
-      faces.D[2] = b1;
-      faces.B[1] = u2;
-      faces.B[3] = u0;
+      faces.U[0] = b3;
+      faces.U[2] = b1;
+      faces.B[1] = d2;
+      faces.B[3] = d0;
+      faces.D[0] = f0;
+      faces.D[2] = f2;
+      faces.F[0] = u0;
+      faces.F[2] = u2;
     }
   }
 
@@ -1503,15 +1510,15 @@ h1 {
   /**
    * CSS degrees for one CW token (matched to applyMove / facelets).
    * Cubies use translate3d(x, -y, z): every CSS rotate*(θ) ≡ model rotate*(-θ).
-   * R family uses the inverted sense vs classic WCA-CW so token R' matches
-   * the user-facing direction fix; R / R' / R2 stay opposites with continuity.
+   * R and L use inverted sense vs classic WCA-CW so tokens match the
+   * user-facing direction fix; each family stays mutual inverses with continuity.
    */
   function turnDegrees(face, quarterTurns) {
     const cw = {
       U: -90,
       D: 90,
       R: 90,
-      L: 90,
+      L: -90,
       F: 90,
       B: -90,
     }[face];

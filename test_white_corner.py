@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Facelet tests for WHITE_CORNER_CASES in index.html (v1.7)."""
+"""Facelet tests for WHITE_CORNER_CASES in index.html (v1.8)."""
 from __future__ import annotations
 
 import re
@@ -71,18 +71,18 @@ class Cube:
             f["L"][0], f["L"][2] = u1, u0
 
     def moveL(self, times=1):
+        # Matches inverted L sense in index.html (token L = prior L').
         f = self.faces
-        t = ((times % 4) + 4) % 4
-        f["L"] = rot_cw(f["L"], (4 - t) % 4)
+        f["L"] = rot_cw(f["L"], times)
         for _ in range(times):
             u0, u2 = f["U"][0], f["U"][2]
             f0, f2 = f["F"][0], f["F"][2]
             d0, d2 = f["D"][0], f["D"][2]
             b1, b3 = f["B"][1], f["B"][3]
-            f["U"][0], f["U"][2] = f0, f2
-            f["F"][0], f["F"][2] = d0, d2
-            f["D"][0], f["D"][2] = b3, b1
-            f["B"][1], f["B"][3] = u2, u0
+            f["U"][0], f["U"][2] = b3, b1
+            f["B"][1], f["B"][3] = d2, d0
+            f["D"][0], f["D"][2] = f0, f2
+            f["F"][0], f["F"][2] = u0, u2
 
     def moveR(self, times=1):
         f = self.faces
