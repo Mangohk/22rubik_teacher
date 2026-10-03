@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Facelet tests for WHITE_CORNER_CASES / step presets in index.html (v1.9)."""
+"""Facelet tests for WHITE_CORNER_CASES / step presets in index.html (v1.10)."""
 from __future__ import annotations
 
 import ast
@@ -237,16 +237,14 @@ def main():
         str(cases["stuck"]["alg"]),
     )
 
-    # T6 step2 after-alg1: four whites on U (白面已完成)
-    alg1_m = re.search(
-        r'const ALG1 = (\[.*?\]);',
+    # T6 step2 after-alg1: four whites on U, L pair, messy D
+    setup_m = re.search(
+        r'name === "after-alg1"\) \{[\s\S]*?(\[[^\]]+\])\.forEach',
         html,
-        re.S,
     )
-    alg1 = ast.literal_eval(alg1_m.group(1)) if alg1_m else []
+    setup = ast.literal_eval(setup_m.group(1)) if setup_m else []
     c = Cube()
-    c.apply_seq(alg1)
-    c.apply("U")
+    c.apply_seq(setup)
     ok(
         "T6 step2 after-alg1 has 4 whites on U",
         c.faces["U"].count("white") == 4,
@@ -256,6 +254,11 @@ def main():
         "T6 step2 after-alg1 left side is a pair",
         c.faces["L"][0] == c.faces["L"][1],
         str(c.faces["L"][:2]),
+    )
+    ok(
+        "T6 step2 after-alg1 D is not solid yellow",
+        c.faces["D"].count("yellow") < 4,
+        str(c.faces["D"]),
     )
 
     failed = sum(1 for _, p, _ in results if not p)

@@ -741,7 +741,7 @@ h1 {
           <div class="rail-fill" id="rail-fill"></div>
         </div>
         <div class="mast-end">
-          <p class="app-version" id="app-version" hidden>v1.9</p>
+          <p class="app-version" id="app-version" hidden>v1.10</p>
           <p class="step-count" id="step-count">1 / 7</p>
         </div>
       </header>
@@ -859,7 +859,7 @@ h1 {
     <script>
 (() => {
   /** Semver-style app version (major.minor). Bump minor on each ship: 1.1, 1.2, … */
-  const APP_VERSION = "1.9";
+  const APP_VERSION = "1.10";
 
   /**
    * Sticker colour IDs → CSS classes. Face arrays store these keys
@@ -1686,10 +1686,9 @@ h1 {
       const cfg = WHITE_CORNER_CASES[caseId] || WHITE_CORNER_CASES.stuck;
       (cfg.setup || []).forEach((token) => applyMove(token));
     } else if (name === "after-alg1") {
-      // 第二步: white face must stay complete on U (four whites).
-      // ALG1 from solved keeps the white face; U puts the resulting side-pair on L.
-      ALG1.forEach((token) => applyMove(token));
-      applyMove("U");
+      // 第二步: four whites on U + same-colour pair on L, but messy D / lower sides
+      // (reachable scramble — not a solved yellow bottom).
+      ["R", "U'", "L2", "B2", "D'", "L"].forEach((token) => applyMove(token));
     } else if (name === "alg1-u") {
       // 第四步: solved → 白面朝下（黃在上）→ 公式 1 → U
       // Invariant: four yellows on U, four whites on D.
