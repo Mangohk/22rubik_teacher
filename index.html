@@ -482,6 +482,42 @@ h1 {
   margin-top: 0.65rem;
 }
 
+.play-speed {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--line);
+}
+
+.play-speed-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+}
+
+.play-speed-row > span {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.play-speed-row input[type="range"] {
+  flex: 1 1 8rem;
+  min-width: 7rem;
+  accent-color: var(--teal);
+  cursor: pointer;
+}
+
+.play-speed-value {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  min-width: 4.5rem;
+}
+
 .text-btn {
   appearance: none;
   border: 0;
@@ -895,7 +931,7 @@ h1 {
           <div class="rail-fill" id="rail-fill"></div>
         </div>
         <div class="mast-end">
-          <p class="app-version" id="app-version" hidden>v1.15</p>
+          <p class="app-version" id="app-version" hidden>v1.16</p>
           <p class="step-count" id="step-count">1 / 7</p>
         </div>
       </header>
@@ -997,6 +1033,27 @@ h1 {
               <button type="button" class="text-btn turn" id="btn-step">轉一下</button>
               <button type="button" class="text-btn quiet" id="btn-reset">重設</button>
             </div>
+            <div class="play-speed" id="play-speed">
+              <p class="dock-label" id="play-speed-label">播放速度</p>
+              <div class="play-speed-row">
+                <span aria-hidden="true">慢</span>
+                <input
+                  type="range"
+                  id="play-speed-range"
+                  min="1"
+                  max="8"
+                  step="1"
+                  value="4"
+                  dir="rtl"
+                  aria-labelledby="play-speed-label"
+                  aria-describedby="play-speed-value"
+                />
+                <span aria-hidden="true">快</span>
+                <output class="play-speed-value" id="play-speed-value" for="play-speed-range"
+                  >4 秒／步</output
+                >
+              </div>
+            </div>
           </div>
         </div>
         <button type="button" class="nav-btn primary" id="btn-next">下一階段</button>
@@ -1017,7 +1074,7 @@ h1 {
     <script>
 (() => {
   /** Semver-style app version (major.minor). Bump minor on each ship: 1.1, 1.2, … */
-  const APP_VERSION = "1.15";
+  const APP_VERSION = "1.16";
 
   /**
    * Sticker colour IDs → CSS classes. Face arrays store these keys
@@ -1039,6 +1096,11 @@ h1 {
   const HALF = CUBIE / 2;
   const TURN_MS = 420;
   const TURN_MS_180 = 560;
+  /** Auto-play pause after each move finishes (seconds). Slider: 8s slow → 1s fast. */
+  const PLAY_STEP_SEC_MIN = 1;
+  const PLAY_STEP_SEC_MAX = 8;
+  const PLAY_STEP_SEC_DEFAULT = 4;
+  let playStepSec = PLAY_STEP_SEC_DEFAULT;
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /** @type {Record<string, string[]>} */
@@ -1309,6 +1371,8 @@ h1 {
     btnPlay: document.getElementById("btn-play"),
     btnStep: document.getElementById("btn-step"),
     btnReset: document.getElementById("btn-reset"),
+    playSpeedRange: document.getElementById("play-speed-range"),
+    playSpeedValue: document.getElementById("play-speed-value"),
     cube: document.getElementById("cube"),
     cubeRig: document.getElementById("cube-rig"),
     cubeOrbit: document.getElementById("cube-orbit"),
@@ -2171,7 +2235,8 @@ h1 {
     while (playing && playCursor < activeAlg.length - 1) {
       await stepOnce();
       if (!playing) break;
-      await wait(90);
+      // Delay between moves: 8s (慢) … 1s (快). Animation time is separate.
+      await wait(playStepSec * 1000);
     }
     // Leave the cube on the finished pose; algFinished is set inside stepOnce.
     stopPlay();
@@ -2194,6 +2259,24 @@ h1 {
       els.cube.appendChild(cubie);
       return cubie;
     });
+  }
+
+  function syncPlaySpeedUi() {
+    const sec = Math.max(
+      PLAY_STEP_SEC_MIN,
+      Math.min(PLAY_STEP_SEC_MAX, Math.round(playStepSec))
+    );
+    playStepSec = sec;
+    if (els.playSpeedRange) els.playSpeedRange.value = String(sec);
+    if (els.playSpeedValue) els.playSpeedValue.textContent = `${sec} 秒／步`;
+  }
+
+  if (els.playSpeedRange) {
+    els.playSpeedRange.addEventListener("input", () => {
+      playStepSec = Number(els.playSpeedRange.value) || PLAY_STEP_SEC_DEFAULT;
+      syncPlaySpeedUi();
+    });
+    syncPlaySpeedUi();
   }
 
   els.btnPrev.addEventListener("click", () => goTo(stepIndex - 1));
