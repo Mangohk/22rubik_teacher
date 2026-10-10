@@ -249,11 +249,46 @@ h1 {
   z-index: 3;
 }
 
+.teach-dock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.85rem;
+  width: min(100%, 28rem);
+  margin-left: auto;
+  animation: fade-up 0.55s ease both;
+}
+
+.teach-dock:not(:has(.dock-block:not([hidden]), .alg:not([hidden]))) {
+  display: none;
+}
+
+.dock-block {
+  width: 100%;
+}
+
+.dock-block[hidden] {
+  display: none !important;
+}
+
+.dock-label {
+  margin: 0 0 0.45rem;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  text-align: right;
+}
+
 .cases {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 0.65rem 1.1rem;
-  margin-top: 1.1rem;
+  margin-top: 0;
+  width: 100%;
 }
 
 .cases button {
@@ -335,20 +370,24 @@ h1 {
 }
 
 .alg {
-  margin-top: 1.1rem;
-  padding-top: 1.1rem;
-  border-top: 1px solid var(--line);
+  margin-top: 0;
+  padding: 0.85rem 1rem 1rem;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.55);
   animation: fade-up 0.45s ease both;
 }
 
-.practice-moves[hidden] + .alg {
-  margin-top: 1.35rem;
+.alg[hidden] {
+  display: none !important;
 }
 
 .alg-name {
   margin: 0 0 0.7rem;
   font-size: 0.9rem;
   color: var(--ink-soft);
+  text-align: right;
 }
 
 .alg-seq + .alg-seq {
@@ -367,6 +406,7 @@ h1 {
 .moves {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 0.4rem;
 }
 
@@ -400,7 +440,9 @@ h1 {
 .alg-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.9rem;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem 0.9rem;
   margin-top: 0.85rem;
 }
 
@@ -423,7 +465,8 @@ h1 {
   color: var(--ink);
   cursor: pointer;
   border-bottom: 2px solid rgba(228, 87, 46, 0.45);
-  transition: color 0.2s ease, border-color 0.2s ease;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease,
+    transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 }
 
 .text-btn:hover:not(:disabled) {
@@ -437,9 +480,58 @@ h1 {
   font-weight: 600;
 }
 
+.text-btn.turn {
+  border: 0;
+  border-bottom: 0;
+  border-radius: 10px;
+  background: var(--teal);
+  color: #f4fbfa;
+  padding: 0.55rem 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  box-shadow: 0 8px 18px rgba(15, 118, 110, 0.28);
+}
+
+.text-btn.turn:hover:not(:disabled) {
+  color: #fff;
+  background: #0d9488;
+  border-color: transparent;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(15, 118, 110, 0.34);
+}
+
 .text-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+}
+
+.text-btn.turn:disabled {
+  box-shadow: none;
+  transform: none;
+}
+
+@media (max-width: 720px) {
+  .teach-dock {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .dock-label,
+  .alg-name {
+    text-align: left;
+  }
+
+  .cases,
+  .moves,
+  .alg-actions {
+    justify-content: flex-start;
+  }
+
+  .text-btn.turn {
+    min-height: 2.75rem;
+    padding: 0.65rem 1.25rem;
+    font-size: 1.05rem;
+  }
 }
 
 .viz {
@@ -721,6 +813,7 @@ h1 {
   .nav,
   .alg,
   .practice-moves,
+  .teach-dock,
   .rail-fill,
   .move,
   .cubie {
@@ -741,7 +834,7 @@ h1 {
           <div class="rail-fill" id="rail-fill"></div>
         </div>
         <div class="mast-end">
-          <p class="app-version" id="app-version" hidden>v1.13</p>
+          <p class="app-version" id="app-version" hidden>v1.14</p>
           <p class="step-count" id="step-count">1 / 7</p>
         </div>
       </header>
@@ -751,8 +844,6 @@ h1 {
           <p class="hold" id="hold">拿著方塊…</p>
           <h1 id="step-title">載入中…</h1>
           <p class="body" id="step-body"></p>
-
-          <div class="cases" id="cases" hidden></div>
 
           <div class="practice-moves" id="practice-moves" hidden>
             <p class="practice-label">試轉</p>
@@ -767,32 +858,6 @@ h1 {
               <button type="button" data-move="D'">D'</button>
               <button type="button" data-move="L">L</button>
               <button type="button" data-move="L'">L'</button>
-            </div>
-          </div>
-
-          <div class="alg" id="alg-block" hidden>
-            <div class="alg-seq is-active" id="alg-seq-primary">
-              <p class="alg-name" id="alg-label"></p>
-              <div class="moves" id="moves" aria-live="polite"></div>
-              <div class="alg-actions" id="alg-actions-1" hidden>
-                <button type="button" class="text-btn" data-play-alg="alg1">播放</button>
-                <button type="button" class="text-btn" data-step-alg="alg1">下一步手</button>
-                <button type="button" class="text-btn quiet" data-reset-alg="alg1">重設</button>
-              </div>
-            </div>
-            <div class="alg-seq" id="alg-seq-secondary" hidden>
-              <p class="alg-name" id="alg-label-2"></p>
-              <div class="moves" id="moves-2" aria-live="polite"></div>
-              <div class="alg-actions" id="alg-actions-2" hidden>
-                <button type="button" class="text-btn" data-play-alg="alg2">播放</button>
-                <button type="button" class="text-btn" data-step-alg="alg2">下一步手</button>
-                <button type="button" class="text-btn quiet" data-reset-alg="alg2">重設</button>
-              </div>
-            </div>
-            <div class="alg-actions" id="alg-actions-shared">
-              <button type="button" class="text-btn" id="btn-play">播放</button>
-              <button type="button" class="text-btn" id="btn-step">下一步手</button>
-              <button type="button" class="text-btn quiet" id="btn-reset">重設</button>
             </div>
           </div>
         </div>
@@ -839,9 +904,42 @@ h1 {
         </div>
       </section>
 
+      <div class="teach-dock" id="teach-dock" aria-label="教學操作">
+        <div class="dock-block" id="cases-block" hidden>
+          <p class="dock-label">選擇分類</p>
+          <div class="cases" id="cases" role="group" aria-label="選擇分類"></div>
+        </div>
+        <div class="alg" id="alg-block" hidden>
+          <p class="dock-label">顯示步驟</p>
+          <div class="alg-seq is-active" id="alg-seq-primary">
+            <p class="alg-name" id="alg-label"></p>
+            <div class="moves" id="moves" aria-live="polite"></div>
+            <div class="alg-actions" id="alg-actions-1" hidden>
+              <button type="button" class="text-btn" data-play-alg="alg1">播放</button>
+              <button type="button" class="text-btn turn" data-step-alg="alg1">轉一下</button>
+              <button type="button" class="text-btn quiet" data-reset-alg="alg1">重設</button>
+            </div>
+          </div>
+          <div class="alg-seq" id="alg-seq-secondary" hidden>
+            <p class="alg-name" id="alg-label-2"></p>
+            <div class="moves" id="moves-2" aria-live="polite"></div>
+            <div class="alg-actions" id="alg-actions-2" hidden>
+              <button type="button" class="text-btn" data-play-alg="alg2">播放</button>
+              <button type="button" class="text-btn turn" data-step-alg="alg2">轉一下</button>
+              <button type="button" class="text-btn quiet" data-reset-alg="alg2">重設</button>
+            </div>
+          </div>
+          <div class="alg-actions" id="alg-actions-shared">
+            <button type="button" class="text-btn" id="btn-play">播放</button>
+            <button type="button" class="text-btn turn" id="btn-step">轉一下</button>
+            <button type="button" class="text-btn quiet" id="btn-reset">重設</button>
+          </div>
+        </div>
+      </div>
+
       <nav class="nav" aria-label="步驟">
         <button type="button" class="nav-btn" id="btn-prev">上一步</button>
-        <button type="button" class="nav-btn primary" id="btn-next">下一步</button>
+        <button type="button" class="nav-btn primary" id="btn-next">下一階段</button>
       </nav>
 
       <footer class="foot">
@@ -859,7 +957,7 @@ h1 {
     <script>
 (() => {
   /** Semver-style app version (major.minor). Bump minor on each ship: 1.1, 1.2, … */
-  const APP_VERSION = "1.13";
+  const APP_VERSION = "1.14";
 
   /**
    * Sticker colour IDs → CSS classes. Face arrays store these keys
@@ -1132,6 +1230,7 @@ h1 {
     stepTitle: document.getElementById("step-title"),
     stepBody: document.getElementById("step-body"),
     hold: document.getElementById("hold"),
+    casesBlock: document.getElementById("cases-block"),
     cases: document.getElementById("cases"),
     algBlock: document.getElementById("alg-block"),
     algLabel: document.getElementById("alg-label"),
@@ -1855,10 +1954,10 @@ h1 {
     const step = steps[stepIndex];
     els.cases.innerHTML = "";
     if (!step.cases) {
-      els.cases.hidden = true;
+      if (els.casesBlock) els.casesBlock.hidden = true;
       return;
     }
-    els.cases.hidden = false;
+    if (els.casesBlock) els.casesBlock.hidden = false;
     const labels = {
       "1": "1 黃",
       "2": "2 黃",
@@ -1935,7 +2034,7 @@ h1 {
     els.stepTitle.textContent = step.title;
     els.cubeOrbit.dataset.hint = step.hint || "";
     els.btnNext.textContent =
-      stepIndex === steps.length - 1 ? "完成" : "下一步";
+      stepIndex === steps.length - 1 ? "完成" : "下一階段";
     renderProgress();
     renderCases();
     applyCaseCopy();
@@ -1956,7 +2055,7 @@ h1 {
   async function stepOnce() {
     if (animating || !activeAlg.length) return;
 
-    // After the alg finished, the next 下一步手 only restores the step initial pose.
+    // After the alg finished, the next 轉一下 only restores the step initial pose.
     if (algFinished) {
       algFinished = false;
       playCursor = -1;
