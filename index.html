@@ -249,18 +249,47 @@ h1 {
   z-index: 3;
 }
 
+.bottom-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    "dock dock"
+    "prev next";
+  align-items: center;
+  gap: 0.75rem 1rem;
+  animation: fade-up 0.55s ease both;
+}
+
+.bottom-bar > #btn-prev {
+  grid-area: prev;
+  justify-self: start;
+}
+
+.bottom-bar > #btn-next {
+  grid-area: next;
+  justify-self: end;
+}
+
 .teach-dock {
+  grid-area: dock;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 0.85rem;
-  width: min(100%, 28rem);
-  margin-left: auto;
-  animation: fade-up 0.55s ease both;
+  align-items: stretch;
+  gap: 0.55rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.7rem 0.9rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.55);
 }
 
 .teach-dock:not(:has(.dock-block:not([hidden]), .alg:not([hidden]))) {
   display: none;
+}
+
+.bottom-bar:not(:has(.dock-block:not([hidden]), .alg:not([hidden]))) {
+  grid-template-areas: "prev next";
 }
 
 .dock-block {
@@ -272,21 +301,21 @@ h1 {
 }
 
 .dock-label {
-  margin: 0 0 0.45rem;
+  margin: 0 0 0.4rem;
   font-family: var(--font-display);
   font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-soft);
-  text-align: right;
+  text-align: left;
 }
 
 .cases {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0.65rem 1.1rem;
+  justify-content: flex-start;
+  gap: 0.55rem 1rem;
   margin-top: 0;
   width: 100%;
 }
@@ -371,11 +400,10 @@ h1 {
 
 .alg {
   margin-top: 0;
-  padding: 0.85rem 1rem 1rem;
+  padding: 0;
   width: 100%;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.55);
+  border: 0;
+  background: transparent;
   animation: fade-up 0.45s ease both;
 }
 
@@ -384,10 +412,10 @@ h1 {
 }
 
 .alg-name {
-  margin: 0 0 0.7rem;
+  margin: 0 0 0.55rem;
   font-size: 0.9rem;
   color: var(--ink-soft);
-  text-align: right;
+  text-align: left;
 }
 
 .alg-seq + .alg-seq {
@@ -406,7 +434,7 @@ h1 {
 .moves {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 0.4rem;
 }
 
@@ -440,10 +468,10 @@ h1 {
 .alg-actions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
   align-items: center;
   gap: 0.75rem 0.9rem;
-  margin-top: 0.85rem;
+  margin-top: 0.7rem;
 }
 
 .alg-actions[hidden] {
@@ -512,7 +540,6 @@ h1 {
 
 @media (max-width: 720px) {
   .teach-dock {
-    width: 100%;
     align-items: stretch;
   }
 
@@ -531,6 +558,48 @@ h1 {
     min-height: 2.75rem;
     padding: 0.65rem 1.25rem;
     font-size: 1.05rem;
+  }
+}
+
+/* Wide / landscape: 上一步 | teach dock | 下一階段 on one row */
+@media (min-width: 820px) and (min-aspect-ratio: 5 / 4),
+  (orientation: landscape) and (min-width: 740px) {
+  .app {
+    gap: 0.9rem;
+    padding-top: 0.9rem;
+    padding-bottom: 1.25rem;
+  }
+
+  .hero {
+    min-height: auto;
+    gap: clamp(0.85rem, 2.5vw, 1.75rem);
+  }
+
+  .bottom-bar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "prev dock next";
+    align-items: center;
+    gap: 0.75rem 1rem;
+  }
+
+  .bottom-bar:not(:has(.dock-block:not([hidden]), .alg:not([hidden]))) {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: "prev next";
+  }
+
+  .teach-dock {
+    gap: 0.4rem;
+    padding: 0.55rem 0.8rem 0.65rem;
+  }
+
+  .alg-actions {
+    margin-top: 0.5rem;
+  }
+
+  .bottom-bar > .nav-btn {
+    white-space: nowrap;
+    align-self: center;
+    padding: 0.7rem 1.1rem;
   }
 }
 
@@ -720,14 +789,6 @@ h1 {
   background: #2f9e66;
 }
 
-.nav {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  padding-top: 0.25rem;
-  animation: fade-up 0.7s ease 0.1s both;
-}
-
 .nav-btn {
   appearance: none;
   border: 1px solid var(--line);
@@ -810,10 +871,10 @@ h1 {
   .cube-rig,
   .copy.enter,
   .mast,
-  .nav,
   .alg,
   .practice-moves,
   .teach-dock,
+  .bottom-bar,
   .rail-fill,
   .move,
   .cubie {
@@ -834,7 +895,7 @@ h1 {
           <div class="rail-fill" id="rail-fill"></div>
         </div>
         <div class="mast-end">
-          <p class="app-version" id="app-version" hidden>v1.14</p>
+          <p class="app-version" id="app-version" hidden>v1.15</p>
           <p class="step-count" id="step-count">1 / 7</p>
         </div>
       </header>
@@ -904,43 +965,42 @@ h1 {
         </div>
       </section>
 
-      <div class="teach-dock" id="teach-dock" aria-label="教學操作">
-        <div class="dock-block" id="cases-block" hidden>
-          <p class="dock-label">選擇分類</p>
-          <div class="cases" id="cases" role="group" aria-label="選擇分類"></div>
-        </div>
-        <div class="alg" id="alg-block" hidden>
-          <p class="dock-label">顯示步驟</p>
-          <div class="alg-seq is-active" id="alg-seq-primary">
-            <p class="alg-name" id="alg-label"></p>
-            <div class="moves" id="moves" aria-live="polite"></div>
-            <div class="alg-actions" id="alg-actions-1" hidden>
-              <button type="button" class="text-btn" data-play-alg="alg1">播放</button>
-              <button type="button" class="text-btn turn" data-step-alg="alg1">轉一下</button>
-              <button type="button" class="text-btn quiet" data-reset-alg="alg1">重設</button>
-            </div>
-          </div>
-          <div class="alg-seq" id="alg-seq-secondary" hidden>
-            <p class="alg-name" id="alg-label-2"></p>
-            <div class="moves" id="moves-2" aria-live="polite"></div>
-            <div class="alg-actions" id="alg-actions-2" hidden>
-              <button type="button" class="text-btn" data-play-alg="alg2">播放</button>
-              <button type="button" class="text-btn turn" data-step-alg="alg2">轉一下</button>
-              <button type="button" class="text-btn quiet" data-reset-alg="alg2">重設</button>
-            </div>
-          </div>
-          <div class="alg-actions" id="alg-actions-shared">
-            <button type="button" class="text-btn" id="btn-play">播放</button>
-            <button type="button" class="text-btn turn" id="btn-step">轉一下</button>
-            <button type="button" class="text-btn quiet" id="btn-reset">重設</button>
-          </div>
-        </div>
-      </div>
-
-      <nav class="nav" aria-label="步驟">
+      <div class="bottom-bar" id="bottom-bar" role="navigation" aria-label="步驟與操作">
         <button type="button" class="nav-btn" id="btn-prev">上一步</button>
+        <div class="teach-dock" id="teach-dock" aria-label="教學操作">
+          <div class="dock-block" id="cases-block" hidden>
+            <p class="dock-label">選擇分類</p>
+            <div class="cases" id="cases" role="group" aria-label="選擇分類"></div>
+          </div>
+          <div class="alg" id="alg-block" hidden>
+            <p class="dock-label">顯示步驟</p>
+            <div class="alg-seq is-active" id="alg-seq-primary">
+              <p class="alg-name" id="alg-label"></p>
+              <div class="moves" id="moves" aria-live="polite"></div>
+              <div class="alg-actions" id="alg-actions-1" hidden>
+                <button type="button" class="text-btn" data-play-alg="alg1">播放</button>
+                <button type="button" class="text-btn turn" data-step-alg="alg1">轉一下</button>
+                <button type="button" class="text-btn quiet" data-reset-alg="alg1">重設</button>
+              </div>
+            </div>
+            <div class="alg-seq" id="alg-seq-secondary" hidden>
+              <p class="alg-name" id="alg-label-2"></p>
+              <div class="moves" id="moves-2" aria-live="polite"></div>
+              <div class="alg-actions" id="alg-actions-2" hidden>
+                <button type="button" class="text-btn" data-play-alg="alg2">播放</button>
+                <button type="button" class="text-btn turn" data-step-alg="alg2">轉一下</button>
+                <button type="button" class="text-btn quiet" data-reset-alg="alg2">重設</button>
+              </div>
+            </div>
+            <div class="alg-actions" id="alg-actions-shared">
+              <button type="button" class="text-btn" id="btn-play">播放</button>
+              <button type="button" class="text-btn turn" id="btn-step">轉一下</button>
+              <button type="button" class="text-btn quiet" id="btn-reset">重設</button>
+            </div>
+          </div>
+        </div>
         <button type="button" class="nav-btn primary" id="btn-next">下一階段</button>
-      </nav>
+      </div>
 
       <footer class="foot">
         解法依
@@ -957,7 +1017,7 @@ h1 {
     <script>
 (() => {
   /** Semver-style app version (major.minor). Bump minor on each ship: 1.1, 1.2, … */
-  const APP_VERSION = "1.14";
+  const APP_VERSION = "1.15";
 
   /**
    * Sticker colour IDs → CSS classes. Face arrays store these keys
